@@ -41,11 +41,11 @@ namespace nta {
         explicit StdOutputStream(std::ostream& stream);
         ~StdOutputStream() noexcept(false);
 
-        void write(const void* src, size_t size) override;
+        virtual void write(const void* src, size_t size) override;
 
       private:
         std::ostream& stream_;
-    }
+    };
 
   } // proto
 } // nta

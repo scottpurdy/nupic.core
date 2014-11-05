@@ -1418,23 +1418,23 @@ void SpatialPooler::seed_(UInt64 seed)
   return message;
 }
 
-void SpatialPooler::save(int fd)
+void SpatialPooler::save(ostream& stream)
+{
+  ::capnp::MallocMessageBuilder& message = buildMessage();
+  proto::StdOutputStream out(stream);
+  writePackedMessage(out, message);
+}
+
+void SpatialPooler::write(int fd)
 {
   ::capnp::MallocMessageBuilder& message = buildMessage();
   writePackedMessageToFd(fd, message);
 }
 
-void SpatialPooler::write(ostream& stream)
-{
-  ::capnp::MallocMessageBuilder& message = buildMessage();
-  StdOutputStream out(stream);
-  writePackedMessage(out, message);
-}
-
 // Implementation note: this method sets up the instance using data from
 // inStream. This method does not call initialize. As such we have to be careful
 // that everything in initialize is handled properly here.
-void SpatialPooler::load(int fd)
+void SpatialPooler::read(int fd)
 {
   ::capnp::PackedFdMessageReader message(fd);
 

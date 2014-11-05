@@ -24,6 +24,7 @@
  * Implementation of unit tests for SpatialPooler
  */
 
+#include <fcntl.h>
 #include <iostream>
 #include <fstream>
 #include <nta/algorithms/SpatialPooler.hpp>
@@ -278,8 +279,9 @@ namespace nta {
     testCartesianProduct();
     testGetNeighborsND();
     testIsUpdateRound();
-    testSerialize();
     testStripUnlearnedColumns();
+    testSaveLoad();
+    testWriteRead();
   }
 
   void SpatialPoolerTest::testUpdateInhibitionRadius()
@@ -2481,32 +2483,6 @@ namespace nta {
     NTA_CHECK(check_vector_eq(expectedMask4, mask));
   }
 
-  void SpatialPoolerTest::testSerialize() 
-  {
-    string filename = "SpatialPoolerSerialization.tmp";
-    SpatialPooler sp_orig;
-    UInt numInputs = 6;
-    UInt numColumns = 12;
-    setup(sp_orig, numInputs, numColumns);
-
-    ofstream outfile;
-    outfile.open (filename.c_str());
-    sp_orig.save(outfile);
-    outfile.close();
-
-    SpatialPooler sp_dest;
-    ifstream infile (filename.c_str());
-    sp_dest.load(infile);
-    infile.close();
-
-    check_spatial_eq(sp_orig, sp_dest);
-
-
-    string command = string("rm -f ") + filename;
-    int ret = system(command.c_str());
-    NTA_ASSERT(ret == 0); // "SpatialPoolerTest: execution of command " << command << " failed " << std::endl;
-  }
-
   void SpatialPoolerTest::testStripUnlearnedColumns()
   {
     SpatialPooler sp;
@@ -2562,6 +2538,61 @@ namespace nta {
 
       TEST(check_vector_eq(activeArray, expected, 3));
     }
+  }
+
+  void SpatialPoolerTest::testSaveLoad()
+  {
+    string filename = "SpatialPoolerSerialization.tmp";
+    SpatialPooler sp_orig;
+    UInt numInputs = 6;
+    UInt numColumns = 12;
+    setup(sp_orig, numInputs, numColumns);
+
+    ofstream outfile;
+    outfile.open (filename.c_str());
+    sp_orig.save(outfile);
+    outfile.close();
+
+    SpatialPooler sp_dest;
+    ifstream infile (filename.c_str());
+    sp_dest.load(infile);
+    infile.close();
+
+    check_spatial_eq(sp_orig, sp_dest);
+
+
+    string command = string("rm -f ") + filename;
+    int ret = system(command.c_str());
+    NTA_ASSERT(ret == 0); // "SpatialPoolerTest: execution of command " << command << " failed " << std::endl;
+  }
+
+  void SpatialPoolerTest::testWriteRead()
+  {
+    string filename = "SpatialPoolerSerialization.tmp";
+    SpatialPooler sp_orig;
+    UInt numInputs = 6;
+    UInt numColumns = 12;
+    setup(sp_orig, numInputs, numColumns);
+
+    {
+      int fd = open(filename.c_str(), O_CREAT | O_WRONLY, S_IREAD | S_IWRITE);
+      NTA_CHECK(fd >= 0) << strerror(errno);
+      sp_orig.write(fd);
+      close(fd);
+    }
+
+    {
+      SpatialPooler sp_dest;
+      int fd = open(filename.c_str(), O_RDONLY, S_IREAD);
+      NTA_CHECK(fd >= 0) << strerror(errno);
+      sp_dest.read(fd);
+      close(fd);
+
+      check_spatial_eq(sp_orig, sp_dest);
+    }
+
+    NTA_CHECK(!unlink(filename.c_str())) << "Failed to delete " << filename
+      << " with error: " << strerror(errno);
   }
 
 } // end namespace nta

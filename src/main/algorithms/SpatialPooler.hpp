@@ -29,11 +29,12 @@
 
 #include <cstring>
 #include <iostream>
+#include <string>
+#include <vector>
+#include <capnp/message.h>
 #include <nta/math/SparseBinaryMatrix.hpp>
 #include <nta/math/SparseMatrix.hpp>
 #include <nta/types/Types.hpp>
-#include <string>
-#include <vector>
 
 using namespace std;
 
@@ -297,8 +298,9 @@ namespace nta {
     
           @param fd A valid file descriptor.
            */
-          virtual void save(int fd);
-          virtual void write(ostream& stream);
+          virtual void save(ostream& stream);
+          virtual void write(int fd);
+          ::capnp::MallocMessageBuilder& buildMessage();
 
           /**
           Load (deserialize) and initialize the spatial pooler from the
@@ -306,7 +308,8 @@ namespace nta {
     
           @param inStream A valid istream.
            */
-          virtual void load(int fd);
+          virtual void load(istream& stream);
+          virtual void read(int fd);
 
           /**
           Returns the dimensions of the columns in the region.

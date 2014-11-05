@@ -31,11 +31,9 @@ using namespace nta::proto;
 StdOutputStream::StdOutputStream(std::ostream& stream) : stream_(stream) {}
 
 StdOutputStream::~StdOutputStream() noexcept(false)
-{
-  stream_.close();
-}
+{}
 
 void StdOutputStream::write(const void* src, size_t size)
 {
-  stream_.write(src, size);
+  stream_.write((char*)src, size);
 }
