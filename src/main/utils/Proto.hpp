@@ -30,6 +30,7 @@
 
 #include <iostream>
 
+#include <capnp/message.h>
 #include <kj/io.h>
 
 namespace nta {
@@ -46,6 +47,21 @@ namespace nta {
       private:
         std::ostream& stream_;
     };
+
+    void writePackedMessage(
+        std::ostream& stream, ::capnp::MessageBuilder& builder);
+
+    //class StdInputStream: private kj::InputStream {
+
+    //  public:
+    //    explicit StdInputStream(std::istream& stream);
+    //    ~StdInputStream() noexcept(false);
+
+    //    virtual void read(void* buffer, size_t bytes) override;
+
+    //  private:
+    //    std::istream& stream_;
+    //};
 
   } // proto
 } // nta

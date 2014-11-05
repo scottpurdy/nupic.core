@@ -1434,12 +1434,22 @@ void SpatialPooler::write(int fd)
 // Implementation note: this method sets up the instance using data from
 // inStream. This method does not call initialize. As such we have to be careful
 // that everything in initialize is handled properly here.
+void SpatialPooler::read(istream& stream)
+{
+  ::capnp::PackedMessageReader message(fd);
+  SpatialPoolerProto::Reader spProto = message.getRoot<SpatialPoolerProto>();
+  loadProto(spProto);
+}
+
 void SpatialPooler::read(int fd)
 {
   ::capnp::PackedFdMessageReader message(fd);
-
   SpatialPoolerProto::Reader spProto = message.getRoot<SpatialPoolerProto>();
+  loadProto(spProto);
+}
 
+void SpatialPooler::loadProto(SpatialPoolerProto::Reader& spProto)
+{
   rng_ = Random(spProto.getSeed());
   numInputs_ = spProto.getNumInputs();
   numColumns_ = spProto.getNumColumns();

@@ -23,6 +23,7 @@
 /** @file */
 
 #include <iostream>
+#include <capnp/serialize-packed.h>
 
 #include "Proto.hpp"
 
@@ -36,4 +37,10 @@ StdOutputStream::~StdOutputStream() noexcept(false)
 void StdOutputStream::write(const void* src, size_t size)
 {
   stream_.write((char*)src, size);
+}
+
+void writePackedMessage(std::ostream& stream, ::capnp::MessageBuilder& builder)
+{
+  StdOutputStream out(stream);
+  ::capnp::writePackedMessage(out, builder);
 }
