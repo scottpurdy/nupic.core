@@ -293,11 +293,12 @@ namespace nta {
 
           /**
           Save (serialize) the current state of the spatial pooler to the
-          specified output stream.
+          specified file.
     
-          @param outStream A valid ostream.
+          @param fd A valid file descriptor.
            */
-          virtual void save(ostream& outStream);
+          virtual void save(int fd);
+          virtual void write(ostream& stream);
 
           /**
           Load (deserialize) and initialize the spatial pooler from the
@@ -305,16 +306,8 @@ namespace nta {
     
           @param inStream A valid istream.
            */
-          virtual void load(istream& inStream);
+          virtual void load(int fd);
 
-          /**
-          Returns the number of bytes that a save operation would result in.
-          Note: this method is currently somewhat inefficient as it just does
-          a full save into an ostream and counts the resulting size.
-    
-          @returns Integer number of bytes
-           */
-          virtual UInt persistentSize();
           /**
           Returns the dimensions of the columns in the region.
 

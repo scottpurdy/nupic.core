@@ -91,6 +91,7 @@ namespace nta {
     void testIsUpdateRound();
     void testSerialize();
     void testStripUnlearnedColumns();
+    void testWrite();
 
     void print_vec(UInt arr[], UInt n);
     void print_vec(Real arr[], UInt n);
