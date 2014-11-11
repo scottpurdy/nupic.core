@@ -32,6 +32,7 @@
 #include <string>
 #include <vector>
 #include <capnp/message.h>
+#include <nta/algorithms/SpatialPoolerProto.capnp.h>
 #include <nta/math/SparseBinaryMatrix.hpp>
 #include <nta/math/SparseMatrix.hpp>
 #include <nta/types/Types.hpp>
@@ -300,7 +301,7 @@ namespace nta {
            */
           virtual void save(ostream& stream);
           virtual void write(int fd);
-          ::capnp::MallocMessageBuilder& buildMessage();
+          void buildMessage(::capnp::MallocMessageBuilder& message);
 
           /**
           Load (deserialize) and initialize the spatial pooler from the
@@ -310,6 +311,7 @@ namespace nta {
            */
           virtual void load(istream& stream);
           virtual void read(int fd);
+          void loadProto(SpatialPoolerProto::Reader& spProto);
 
           /**
           Returns the dimensions of the columns in the region.

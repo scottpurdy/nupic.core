@@ -39,8 +39,18 @@ void StdOutputStream::write(const void* src, size_t size)
   stream_.write((char*)src, size);
 }
 
-void writePackedMessage(std::ostream& stream, ::capnp::MessageBuilder& builder)
+void writeMessage(std::ostream& stream, ::capnp::MessageBuilder& builder)
 {
   StdOutputStream out(stream);
-  ::capnp::writePackedMessage(out, builder);
+  ::capnp::writeMessage(out, builder);
+}
+
+StdInputStream::StdInputStream(std::istream& stream) : stream_(stream) {}
+
+StdInputStream::~StdInputStream() noexcept(false)
+{}
+
+size_t StdInputStream::tryRead(void* buffer, size_t minBytes, size_t maxBytes)
+{
+  return stream_.readsome((char*)buffer, maxBytes);
 }

@@ -25,6 +25,7 @@
 */
 
 #include <nta/utils/Random.hpp>
+#include <nta/utils/RandomProto.capnp.h>
 #include <nta/utils/Log.hpp>
 #include <nta/utils/StringUtils.hpp>
 #include <cstdlib>
@@ -63,6 +64,8 @@ namespace nta
     RandomImpl(UInt64 seed);
     ~RandomImpl() {};
     UInt32 getUInt32();
+    void save(RandomImplProto::Builder proto);
+    void load(RandomImplProto::Reader& proto);
     // Note: copy constructor and operator= are needed
     // The default is ok.
   private:
@@ -239,6 +242,29 @@ UInt32 RandomImpl::getUInt32(void)
 }
 
 
+void RandomImpl::save(RandomImplProto::Builder proto)
+{
+  capnp::List<Int64>::Builder state = proto.initState(stateSize_);
+  for (UInt i = 0; i < stateSize_; ++i)
+  {
+    state.set(i, state_[i]);
+  }
+  proto.setRptr(rptr_);
+  proto.setFptr(fptr_);
+}
+
+
+void RandomImpl::load(RandomImplProto::Reader& proto)
+{
+  capnp::List<Int64>::Reader& state = proto.getState();
+  for (UInt i = 0; i < state.size(); ++i)
+  {
+    state_[i] = state[i];
+  }
+  rptr_ = proto.getRptr();
+  fptr_ = proto.getFptr();
+}
+
 
 RandomImpl::RandomImpl(UInt64 seed)
 {
@@ -291,7 +317,6 @@ namespace nta
     outStream << " endrandom-v1";
     return outStream;
   }
-
 
   std::istream& operator>>(std::istream& inStream, Random& r)
   {

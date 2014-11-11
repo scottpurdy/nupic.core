@@ -48,20 +48,21 @@ namespace nta {
         std::ostream& stream_;
     };
 
-    void writePackedMessage(
+    void writeMessage(
         std::ostream& stream, ::capnp::MessageBuilder& builder);
 
-    //class StdInputStream: private kj::InputStream {
+    class StdInputStream: public kj::InputStream {
 
-    //  public:
-    //    explicit StdInputStream(std::istream& stream);
-    //    ~StdInputStream() noexcept(false);
+      public:
+        explicit StdInputStream(std::istream& stream);
+        ~StdInputStream() noexcept(false);
 
-    //    virtual void read(void* buffer, size_t bytes) override;
+        virtual size_t tryRead(
+            void* buffer, size_t minBytes, size_t maxBytes) override;
 
-    //  private:
-    //    std::istream& stream_;
-    //};
+      private:
+        std::istream& stream_;
+    };
 
   } // proto
 } // nta

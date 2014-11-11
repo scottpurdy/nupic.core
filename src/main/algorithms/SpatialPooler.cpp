@@ -30,7 +30,7 @@
 #include <vector>
 
 #include <capnp/message.h>
-#include <capnp/serialize-packed.h>
+#include <capnp/serialize.h>
 
 #include <nta/algorithms/SpatialPooler.hpp>
 #include <nta/math/Math.hpp>
@@ -1291,159 +1291,163 @@ void SpatialPooler::seed_(UInt64 seed)
   rng_ = Random(seed);
 }
 
-::capnp::MallocMessageBuilder& SpatialPooler::buildMessage()
+void SpatialPooler::buildMessage(capnp::MallocMessageBuilder& message)
 {
-  ::capnp::MallocMessageBuilder message;
-
   SpatialPoolerProto::Builder spProto = message.initRoot<SpatialPoolerProto>();
 
   spProto.setSeed(rng_.getSeed());
   spProto.setNumInputs(numInputs_);
   spProto.setNumColumns(numColumns_);
-  ::capnp::List<UInt32>::Builder columnDims =
-      spProto.initColumnDimensions(columnDimensions_.size());
 
-  for (int i = 0; i < columnDimensions_.size(); ++i) {
+  capnp::List<UInt32>::Builder columnDims =
+      spProto.initColumnDimensions(columnDimensions_.size());
+  for (int i = 0; i < columnDimensions_.size(); ++i)
+  {
     columnDims.set(i, columnDimensions_[i]);
   }
 
-  //// Write a starting marker and version.
-  //outStream << "SpatialPooler" << endl;
-  //outStream << version_ << endl;
+  capnp::List<UInt32>::Builder inputDims =
+      spProto.initInputDimensions(inputDimensions_.size());
+  for (int i = 0; i < inputDimensions_.size(); ++i)
+  {
+    inputDims.set(i, inputDimensions_[i]);
+  }
 
-  //// Store the simple variables first.
-  //outStream << numInputs_ << " "
-  //          << numColumns_ << " "
-  //          << potentialRadius_ << " "
-  //          << potentialPct_ << " "
-  //          << initConnectedPct_ << " "
-  //          << globalInhibition_ << " "
-  //          << numActiveColumnsPerInhArea_ << " "
-  //          << localAreaDensity_ << " "
-  //          << stimulusThreshold_ << " "
-  //          << inhibitionRadius_ << " "
-  //          << dutyCyclePeriod_ << " "
-  //          << maxBoost_ << " "
-  //          << iterationNum_ << " "
-  //          << iterationLearnNum_ << " "
-  //          << spVerbosity_ << " "
-  //          << updatePeriod_ << " " 
-  //          
-  //          << synPermMin_ << " "
-  //          << synPermMax_ << " "
-  //          << synPermTrimThreshold_ << " "
-  //          << synPermInactiveDec_ << " "
-  //          << synPermActiveInc_ << " "
-  //          << synPermBelowStimulusInc_ << " "
-  //          << synPermConnected_ << " "
-  //          << minPctOverlapDutyCycles_ << " "
-  //          << minPctActiveDutyCycles_ << " " 
-  //          << wrapAround_ << " "
-  //          << endl;
+  spProto.setPotentialRadius(potentialRadius_);
+  spProto.setPotentialPct(potentialPct_);
+  spProto.setInhibitionRadius(inhibitionRadius_);
+  spProto.setGlobalInhibition(globalInhibition_);
+  spProto.setNumActiveColumnsPerInhArea(numActiveColumnsPerInhArea_);
+  spProto.setLocalAreaDensity(localAreaDensity_);
+  spProto.setStimulusThreshold(stimulusThreshold_);
+  spProto.setSynPermInactiveDec(synPermInactiveDec_);
+  spProto.setSynPermActiveInc(synPermActiveInc_);
+  spProto.setSynPermBelowStimulusInc(synPermBelowStimulusInc_);
+  spProto.setSynPermConnected(synPermConnected_);
+  spProto.setMinPctOverlapDutyCycles(minPctOverlapDutyCycles_);
+  spProto.setMinPctActiveDutyCycles(minPctActiveDutyCycles_);
+  spProto.setDutyCyclePeriod(dutyCyclePeriod_);
+  spProto.setMaxBoost(maxBoost_);
+  spProto.setWrapAround(wrapAround_);
+  spProto.setSpVerbosity(spVerbosity_);
 
-  //// Store vectors.
-  //outStream << inputDimensions_.size() << " ";
-  //for (auto & elem : inputDimensions_) {
-  //  outStream << elem << " ";
-  //}
-  //outStream << endl;
+  spProto.setSynPermMin(synPermMin_);
+  spProto.setSynPermMax(synPermMax_);
+  spProto.setSynPermTrimThreshold(synPermTrimThreshold_);
+  spProto.setUpdatePeriod(updatePeriod_);
 
-  //outStream << columnDimensions_.size() << " ";
-  //for (auto & elem : columnDimensions_) {
-  //  outStream << elem << " ";
-  //}
-  //outStream << endl;
+  spProto.setVersion(version_);
+  spProto.setIterationNum(iterationNum_);
+  spProto.setIterationLearnNum(iterationLearnNum_);
 
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  outStream << boostFactors_[i] << " ";
-  //}
-  //outStream << endl;
+  capnp::List<capnp::List<UInt32>>::Builder potentialPools =
+      spProto.initPotentialPools(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    vector<UInt> const & pot = potentialPools_.getSparseRow(i);
+    capnp::List<UInt32>::Builder pool = potentialPools.init(i, pot.size());
+    for (UInt j = 0; j < pot.size(); ++j)
+    {
+      pool.set(j, pot[j]);
+    }
+  }
 
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  outStream << overlapDutyCycles_[i] << " ";
-  //}
-  //outStream << endl;
+  capnp::List<capnp::List<SparseFloat>>::Builder permanences =
+      spProto.initPermanences(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    // TODO: Get a reference to the vector rather than building a new one?
+    vector<pair<UInt, Real> > perm;
+    perm.resize(permanences_.nNonZerosOnRow(i));
+    permanences_.getRowToSparse(i, perm.begin());
 
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  outStream << activeDutyCycles_[i] << " ";
-  //}
-  //outStream << endl;
+    capnp::List<SparseFloat>::Builder pool = permanences.init(i, perm.size());
 
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  outStream << minOverlapDutyCycles_[i] << " ";
-  //}
-  //outStream << endl;
+    for (UInt j = 0; j < perm.size(); ++j)
+    {
+      SparseFloat::Builder sf = pool[j];
+      sf.setIndex(perm[j].first);
+      sf.setValue(perm[j].second);
+    }
+  }
 
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  outStream << minActiveDutyCycles_[i] << " ";
-  //}
-  //outStream << endl;
+  capnp::List<Real32>::Builder tieBreaker =
+      spProto.initTieBreaker(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    tieBreaker.set(i, tieBreaker_[i]);
+  }
 
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  outStream << tieBreaker_[i] << " ";
-  //}
-  //outStream << endl;
+  // Connected synapses not saved...
+  // Connected counts not saved...
 
+  capnp::List<Real32>::Builder overlapDutyCycles =
+      spProto.initOverlapDutyCycles(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    overlapDutyCycles.set(i, overlapDutyCycles_[i]);
+  }
 
-  //// Store matrices.
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  vector<UInt> pot;
-  //  pot.resize(potentialPools_.nNonZerosOnRow(i));
-  //  pot = potentialPools_.getSparseRow(i);
-  //  outStream << pot.size() << endl;
-  //  for (auto & elem : pot) {
-  //    outStream << elem << " ";
-  //  }
-  //  outStream << endl;
-  //}
-  //outStream << endl;
-  //
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  vector<pair<UInt, Real> > perm;
-  //  perm.resize(permanences_.nNonZerosOnRow(i));
-  //  outStream << perm.size() << endl;
-  //  permanences_.getRowToSparse(i, perm.begin());
-  //  for (auto & elem : perm) {
-  //    outStream << elem.first << " " << elem.second << " ";
-  //  }
-  //  outStream << endl;
-  //}
-  //outStream << endl;
+  capnp::List<Real32>::Builder activeDutyCycles =
+      spProto.initActiveDutyCycles(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    activeDutyCycles.set(i, activeDutyCycles_[i]);
+  }
+
+  capnp::List<Real32>::Builder minOverlapDutyCycles =
+      spProto.initMinOverlapDutyCycles(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    minOverlapDutyCycles.set(i, minOverlapDutyCycles_[i]);
+  }
+
+  capnp::List<Real32>::Builder minActiveDutyCycles =
+      spProto.initMinActiveDutyCycles(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    minActiveDutyCycles.set(i, minActiveDutyCycles_[i]);
+  }
+
+  capnp::List<Real32>::Builder boostFactors =
+      spProto.initBoostFactors(numColumns_);
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    boostFactors.set(i, boostFactors_[i]);
+  }
 
   //outStream << rng_ << endl;
-
-  //outStream << "~SpatialPooler" << endl;
-
-
-  return message;
 }
 
 void SpatialPooler::save(ostream& stream)
 {
-  ::capnp::MallocMessageBuilder& message = buildMessage();
+  capnp::MallocMessageBuilder message;
+  buildMessage(message);
   proto::StdOutputStream out(stream);
-  writePackedMessage(out, message);
+  writeMessage(out, message);
 }
 
 void SpatialPooler::write(int fd)
 {
-  ::capnp::MallocMessageBuilder& message = buildMessage();
-  writePackedMessageToFd(fd, message);
+  capnp::MallocMessageBuilder message;
+  buildMessage(message);
+  writeMessageToFd(fd, message);
 }
 
 // Implementation note: this method sets up the instance using data from
 // inStream. This method does not call initialize. As such we have to be careful
 // that everything in initialize is handled properly here.
-void SpatialPooler::read(istream& stream)
+void SpatialPooler::load(istream& stream)
 {
-  ::capnp::PackedMessageReader message(fd);
+  proto::StdInputStream in(stream);
+  capnp::InputStreamMessageReader message(in);
   SpatialPoolerProto::Reader spProto = message.getRoot<SpatialPoolerProto>();
   loadProto(spProto);
 }
 
 void SpatialPooler::read(int fd)
 {
-  ::capnp::PackedFdMessageReader message(fd);
+  capnp::StreamFdMessageReader message(fd);
   SpatialPoolerProto::Reader spProto = message.getRoot<SpatialPoolerProto>();
   loadProto(spProto);
 }

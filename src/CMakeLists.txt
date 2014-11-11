@@ -94,6 +94,7 @@ macro(get_source_groups src_dir)
   # Add root files as a blank source group
   file(GLOB src_files
     ${src_dir}/*.cpp
+    ${src_dir}/*.c++
     ${src_dir}/*.hpp
     ${src_dir}/*.h
   )
@@ -109,6 +110,7 @@ macro(get_source_groups src_dir)
     foreach(dir ${src_sub_dirs})
       file(GLOB src_files
         ${dir}/*.cpp
+        ${dir}/*.c++
         ${dir}/*.hpp
         ${dir}/*.h
       )
@@ -635,6 +637,16 @@ set(LIBRARIES
 )
 generate_executable(${EXECUTABLE_HELLOREGION} "${PROJECT_SOURCE_DIR}/examples/regions" "${CMAKE_INSTALL_PREFIX}/bin" "${NTA_CXXFLAGS}" "${NTA_LINKFLAGS}" "${LIBRARIES}")
 
+#
+# Proto test
+#
+set(EXECUTABLE_PROTO prototest)
+set(LIBRARIES
+  ${LIB_STATIC_NUPICCORE}
+  ${NTA_STANDARD_LIBS}
+)
+generate_executable(${EXECUTABLE_PROTO} "${PROJECT_SOURCE_DIR}/examples/proto" "${CMAKE_INSTALL_PREFIX}/bin" "${NTA_CXXFLAGS}" "${NTA_LINKFLAGS}" "${LIBRARIES}")
+
 # Merge nupic_core and all static libraries to a stand-alone library
 merge_static_libraries(${LIB_STATIC_NUPICCORE} "${CMAKE_INSTALL_PREFIX}/lib" "${LIB_STATIC_NUPICCORE};${NTA_STANDARD_LIBS}" "${LIB_STATIC_NUPICCORE}")
 
@@ -647,7 +659,7 @@ merge_static_libraries(${LIB_STATIC_NUPICCORE} "${CMAKE_INSTALL_PREFIX}/lib" "${
 ################################################################################
 
 install(TARGETS ${LIB_STATIC_NUPICCORE} DESTINATION lib)
-install(TARGETS testcpphtm unit_tests helloregion DESTINATION bin)
+install(TARGETS testcpphtm unit_tests helloregion prototest DESTINATION bin)
 
 #
 # Copy all headers files to 'build/release/include'
