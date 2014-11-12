@@ -24,13 +24,21 @@
     Random Number Generator implementation
 */
 
-#include <nta/utils/Random.hpp>
-#include <nta/utils/RandomProto.capnp.h>
-#include <nta/utils/Log.hpp>
-#include <nta/utils/StringUtils.hpp>
 #include <cstdlib>
 #include <ctime>
 #include <cmath> // For ldexp.
+#include <iostream> // For istream, ostream
+
+#include <capnp/message.h>
+#include <capnp/serialize.h>
+
+#include <nta/types/Types.hpp>
+#include <nta/utils/Proto.hpp>
+#include <nta/utils/Random.hpp>
+#include <nta/utils/Log.hpp>
+#include <nta/utils/StringUtils.hpp>
+
+#include "RandomProto.capnp.h"
 
 using namespace nta;
 Random* Random::theInstanceP_ = nullptr;
@@ -64,7 +72,7 @@ namespace nta
     RandomImpl(UInt64 seed);
     ~RandomImpl() {};
     UInt32 getUInt32();
-    void save(RandomImplProto::Builder proto);
+    void save(RandomImplProto::Builder& proto) const;
     void load(RandomImplProto::Reader& proto);
     // Note: copy constructor and operator= are needed
     // The default is ok.
@@ -211,6 +219,60 @@ double Random::getReal64()
   return returnval;
 }
 
+void Random::save(int fd) const
+{
+  capnp::MallocMessageBuilder message;
+  RandomProto::Builder proto = message.initRoot<RandomProto>();
+  save(proto);
+
+  writeMessageToFd(fd, message);
+}
+
+void Random::save(std::ostream& os) const
+{
+  capnp::MallocMessageBuilder message;
+  RandomProto::Builder proto = message.initRoot<RandomProto>();
+  save(proto);
+
+  proto::StdOutputStream out(os);
+  writeMessage(out, message);
+}
+
+void Random::save(RandomProto::Builder& proto) const
+{
+  // Save Random state
+  proto.setSeed(seed_);
+
+  // Save RandomImpl state
+  auto implProto = proto.initImpl();
+  impl_->save(implProto);
+}
+
+void Random::load(int fd)
+{
+  capnp::StreamFdMessageReader message(fd);
+  RandomProto::Reader proto = message.getRoot<RandomProto>();
+  load(proto);
+}
+
+void Random::load(std::istream& is)
+{
+  proto::StdInputStream in(is);
+  capnp::InputStreamMessageReader message(in);
+  RandomProto::Reader proto = message.getRoot<RandomProto>();
+  load(proto);
+}
+
+void Random::load(RandomProto::Reader& proto)
+{
+  // Load Random state
+  seed_ = proto.getSeed();
+
+  // Load RandomImpl state
+  auto implProto = proto.getImpl();
+  impl_->load(implProto);
+}
+
 
 // ---- RandomImpl follows ----
 
@@ -242,9 +304,9 @@ UInt32 RandomImpl::getUInt32(void)
 }
 
 
-void RandomImpl::save(RandomImplProto::Builder proto)
+void RandomImpl::save(RandomImplProto::Builder& proto) const
 {
-  capnp::List<Int64>::Builder state = proto.initState(stateSize_);
+  capnp::List<int64_t>::Builder state = proto.initState(stateSize_);
   for (UInt i = 0; i < stateSize_; ++i)
   {
     state.set(i, state_[i]);
@@ -256,7 +318,7 @@ void RandomImpl::save(RandomImplProto::Builder proto)
 
 void RandomImpl::load(RandomImplProto::Reader& proto)
 {
-  capnp::List<Int64>::Reader& state = proto.getState();
+  capnp::List<int64_t>::Reader state = proto.getState();
   for (UInt i = 0; i < state.size(); ++i)
   {
     state_[i] = state[i];

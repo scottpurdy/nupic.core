@@ -24,6 +24,8 @@
 #include <fcntl.h>
 #include <fstream>
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
 #include <vector>
 #include <nta/algorithms/SpatialPooler.hpp>
 #include <nta/utils/Random.hpp>
@@ -32,9 +34,19 @@ using namespace std;
 using namespace nta;
 using namespace nta::algorithms::spatial_pooler;
 
-int main(int argc, const char * argv[])
+long diff(timeval & start, timeval & end)
+{
+  return (
+      ((end.tv_sec - start.tv_sec) * 1000000) +
+      (end.tv_usec - start.tv_usec)
+  );
+}
+
+void testSP()
 {
   Random random(10);
+  struct timeval start, end;
+  long mtime;
 
   const UInt inputSize = 500;
   const UInt numColumns = 500;
@@ -58,7 +70,7 @@ int main(int argc, const char * argv[])
   }
   UInt output[numColumns];
 
-  for (UInt i = 0; i < 100; ++i)
+  for (UInt i = 0; i < 10000; ++i)
   {
     random.shuffle(input, input + inputSize);
     sp1.compute(input, true, output, false);
@@ -75,50 +87,284 @@ int main(int argc, const char * argv[])
     }
   }
 
-  cout << "A" << endl;
+  // Save initial trained model
+  ofstream osA("outA.proto", ofstream::binary);
+  sp1.write(osA);
+  osA.close();
+
+  int out = open("outB.proto", O_WRONLY);
+  sp1.write(out);
+  close(out);
+
+  ofstream osC("outC.proto", ofstream::binary);
+  sp1.save(osC);
+  osC.close();
 
   SpatialPooler sp2;
 
-  if (false)
+  long timeA, timeB, timeC = 0;
+
+  for (UInt i = 0; i < 100; ++i)
   {
-    // Serialize
-    ofstream os("out.proto", ofstream::binary);
-    sp1.save(os);
-    os.close();
+    // Create new input
+    random.shuffle(input, input + inputSize);
 
-    cout << "B" << endl;
+    // Get expected output
+    UInt outputBaseline[numColumns];
+    sp1.compute(input, true, outputBaseline, false);
 
-    // Deserialize
-    ifstream is("out.proto", ifstream::binary);
-    sp2.load(is);
-    is.close();
+    UInt outputA[numColumns];
+    UInt outputB[numColumns];
+    UInt outputC[numColumns];
 
-  } else {
-    // Serialize
-    int out = open("out.proto", O_WRONLY);
-    sp1.write(out);
-    close(out);
+    // A - First do iostream version
+    {
+      SpatialPooler spTemp;
 
-    cout << "B" << endl;
+      gettimeofday(&start, nullptr);
 
-    // Deserialize
-    int in = open("out.proto", O_RDONLY);
-    sp2.read(in);
-    close(in);
+      // Deserialize
+      ifstream is("outA.proto", ifstream::binary);
+      spTemp.read(is);
+      is.close();
+
+      // Feed new record through
+      spTemp.compute(input, true, outputA, false);
+
+      // Serialize
+      ofstream os("outA.proto", ofstream::binary);
+      spTemp.write(os);
+      os.close();
+
+      gettimeofday(&end, nullptr);
+      timeA = timeA + diff(start, end);
+    }
+    // B - Next do fd version
+    {
+      SpatialPooler spTemp;
+
+      gettimeofday(&start, nullptr);
+
+      // Deserialize
+      int in = open("outB.proto", O_RDONLY);
+      spTemp.read(in);
+      close(in);
+
+      // Feed new record through
+      spTemp.compute(input, true, outputB, false);
+
+      // Serialize
+      int out = open("outB.proto", O_WRONLY);
+      spTemp.write(out);
+      close(out);
+
+      gettimeofday(&end, nullptr);
+      timeB = timeB + diff(start, end);
+    }
+    // C - Next do old version
+    {
+      SpatialPooler spTemp;
+
+      gettimeofday(&start, nullptr);
+
+      // Deserialize
+      ifstream is("outC.proto", ifstream::binary);
+      spTemp.load(is);
+      is.close();
+
+      // Feed new record through
+      spTemp.compute(input, true, outputC, false);
+
+      // Serialize
+      ofstream os("outC.proto", ofstream::binary);
+      spTemp.save(os);
+      os.close();
+
+      gettimeofday(&end, nullptr);
+      timeC = timeC + diff(start, end);
+    }
+
+    for (UInt i = 0; i < numColumns; ++i)
+    {
+      NTA_ASSERT(outputBaseline[i] == outputA[i]);
+      NTA_ASSERT(outputBaseline[i] == outputB[i]);
+      NTA_ASSERT(outputBaseline[i] == outputC[i]);
+    }
 
   }
 
-  cout << "C" << endl;
+  cout << "Time for iostream capnp: " << ((Real)timeA / 1000.0) << endl;
+  cout << "Time for fd capnp: " << ((Real)timeB / 1000.0) << endl;
+  cout << "Time for old method: " << ((Real)timeC / 1000.0) << endl;
 
-  UInt outputBaseline[numColumns];
-  sp1.compute(input, true, outputBaseline, false);
-  UInt outputLoaded[numColumns];
-  sp2.compute(input, true, outputLoaded, false);
+}
 
-  for (UInt i = 0; i < numColumns; ++i)
-  {
-    NTA_ASSERT(outputBaseline[i] == outputLoaded[i]);
-  }
+void testRandomFd()
+{
+  Random r1(7);
+  Random r2;
+
+  r1.getUInt32();
+
+  // Serialize
+  int out = open(
+      "random.proto", O_WRONLY | O_CREAT | O_TRUNC,
+      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+  r1.save(out);
+  fsync(out);
+  close(out);
+
+  // Deserialize
+  int in = open("random.proto", O_RDONLY);
+  r2.load(in);
+  close(in);
+
+  // Test
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+}
+
+void testRandomIOStream()
+{
+  Random r1(7);
+  Random r2;
+
+  r1.getUInt32();
+
+  // Serialize
+  ofstream os("random2.proto", ofstream::binary);
+  r1.save(os);
+  os.flush();
+  os.close();
+
+  // Deserialize
+  ifstream is("random2.proto", ifstream::binary);
+  r2.load(is);
+  is.close();
+
+  // Test
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+}
+
+void testRandomManual()
+{
+  Random r1(7);
+  Random r2;
+
+  r1.getUInt32();
+
+  // Serialize
+  ofstream os("random3.proto", ofstream::binary);
+  os << r1;
+  os.flush();
+  os.close();
+
+  // Deserialize
+  ifstream is("random3.proto", ifstream::binary);
+  is >> r2;
+  is.close();
+
+  // Test
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+}
+
+void testRandomFdToStream()
+{
+  Random r1(7);
+  Random r2;
+
+  r1.getUInt32();
+
+  // Serialize
+  int out = open(
+      "random.proto", O_WRONLY | O_CREAT | O_TRUNC,
+      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+  r1.save(out);
+  close(out);
+
+  // Deserialize
+  ifstream is("random2.proto", ifstream::binary);
+  r2.load(is);
+  is.close();
+
+  // Test
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+}
+
+void testRandomStreamToFd()
+{
+  Random r1(7);
+  Random r2;
+
+  r1.getUInt32();
+
+  // Serialize
+  ofstream os("random2.proto", ofstream::binary);
+  r1.save(os);
+  os.flush();
+  os.close();
+
+  // Deserialize
+  int in = open("random.proto", O_RDONLY);
+  r2.load(in);
+  close(in);
+
+  // Test
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+  NTA_ASSERT(r1.getUInt32() == r2.getUInt32());
+}
+
+int main(int argc, const char * argv[])
+{
+  testSP();
+
+  //time_t startFd, endFd;
+  //time(&startFd);
+  //for (UInt i = 0; i < 50000; ++i)
+  //{
+  //  testRandomFd();
+  //}
+  //time(&endFd);
+  //cout << "FD time: " << (endFd - startFd) << endl;
+
+  //time_t startStream, endStream;
+  //time(&startStream);
+  //for (UInt i = 0; i < 50000; ++i)
+  //{
+  //  testRandomIOStream();
+  //}
+  //time(&endStream);
+  //cout << "Stream time: " << (endStream - startStream) << endl;
+
+  //time_t startManual, endManual;
+  //time(&startManual);
+  //for (UInt i = 0; i < 50000; ++i)
+  //{
+  //  testRandomManual();
+  //}
+  //time(&endManual);
+  //cout << "Manual time: " << (endManual - startManual) << endl;
+
+  //testRandomFdToStream();
+  //testRandomStreamToFd();
 
   return 0;
 }

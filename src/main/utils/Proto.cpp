@@ -29,6 +29,12 @@
 
 using namespace nta::proto;
 
+namespace nta
+{
+
+namespace proto
+{
+
 StdOutputStream::StdOutputStream(std::ostream& stream) : stream_(stream) {}
 
 StdOutputStream::~StdOutputStream() noexcept(false)
@@ -42,7 +48,7 @@ void StdOutputStream::write(const void* src, size_t size)
 void writeMessage(std::ostream& stream, ::capnp::MessageBuilder& builder)
 {
   StdOutputStream out(stream);
-  ::capnp::writeMessage(out, builder);
+  capnp::writeMessage(out, builder);
 }
 
 StdInputStream::StdInputStream(std::istream& stream) : stream_(stream) {}
@@ -52,5 +58,10 @@ StdInputStream::~StdInputStream() noexcept(false)
 
 size_t StdInputStream::tryRead(void* buffer, size_t minBytes, size_t maxBytes)
 {
-  return stream_.readsome((char*)buffer, maxBytes);
+  stream_.read((char*)buffer, maxBytes);
+  return stream_.gcount();
 }
+
+} // namespace proto
+
+} // namespace nta

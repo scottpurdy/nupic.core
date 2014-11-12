@@ -3,15 +3,18 @@
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("nta::algorithms::spatial_pooler");
 
+using import "../utils/RandomProto.capnp".RandomProto;
+
+# Next ID: 37
 struct SpatialPoolerProto {
-  seed @0 :Int32;
+  random @0 :RandomProto;
   numInputs @1 :UInt32;
   numColumns @2 :UInt32;
   columnDimensions @3 :List(UInt32);
   inputDimensions @4 :List(UInt32);
   potentialRadius @5 :UInt32;
   potentialPct @6 :Float32;
-  inhibitionRadius @37 :UInt32;
+  inhibitionRadius @35 :UInt32;
   globalInhibition @7 :Bool;
   numActiveColumnsPerInhArea @8 :UInt32;
   localAreaDensity @9 :Float32;
@@ -24,7 +27,7 @@ struct SpatialPoolerProto {
   minPctActiveDutyCycles @16 :Float32;
   dutyCyclePeriod @17 :UInt16;
   maxBoost @18 :Float32;
-  wrapAround @38 :Bool;
+  wrapAround @36 :Bool;
   spVerbosity @19 :UInt8;
 
   synPermMin @20 :Float32;
@@ -50,11 +53,11 @@ struct SpatialPoolerProto {
   #connectedSynapses @30 :List(SparseBool);
   #connectedCounts @31 :List(UInt32);
 
-  overlapDutyCycles @32 :List(Float32);
-  activeDutyCycles @33 :List(Float32);
-  minOverlapDutyCycles @34 :List(Float32);
-  minActiveDutyCycles @35 :List(Float32);
-  boostFactors @36 :List(Float32);
+  overlapDutyCycles @30 :List(Float32);
+  activeDutyCycles @31 :List(Float32);
+  minOverlapDutyCycles @32 :List(Float32);
+  minActiveDutyCycles @33 :List(Float32);
+  boostFactors @34 :List(Float32);
 }
 
 struct SparseFloat {

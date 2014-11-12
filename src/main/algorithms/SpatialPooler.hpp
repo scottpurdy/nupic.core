@@ -299,9 +299,10 @@ namespace nta {
     
           @param fd A valid file descriptor.
            */
-          virtual void save(ostream& stream);
+          virtual void save(ostream& outStream);
+          virtual void write(ostream& stream);
           virtual void write(int fd);
-          void buildMessage(::capnp::MallocMessageBuilder& message);
+          void buildMessage(SpatialPoolerProto::Builder& spProto);
 
           /**
           Load (deserialize) and initialize the spatial pooler from the
@@ -309,7 +310,8 @@ namespace nta {
     
           @param inStream A valid istream.
            */
-          virtual void load(istream& stream);
+          virtual void load(istream& inStream);
+          virtual void read(istream& stream);
           virtual void read(int fd);
           void loadProto(SpatialPoolerProto::Reader& spProto);
 
@@ -1387,7 +1389,7 @@ namespace nta {
           Real minPctActiveDutyCycles_;
 
           SparseMatrix<UInt,Real,Int,Real64> permanences_;
-          SparseBinaryMatrix<UInt,UInt> potentialPools_;
+          SparseBinaryMatrix<UInt, UInt> potentialPools_;
           SparseBinaryMatrix<UInt, UInt> connectedSynapses_;
           vector<UInt> connectedCounts_;
 

@@ -1,4 +1,4 @@
-@0xd2c65c80cef885ba
+@0x88eaee6db8e1f67c;
 
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("nta");

@@ -1280,6 +1280,252 @@ void SpatialPooler::getNeighborsND_(
 
 }
 
+void SpatialPooler::save(ostream& outStream)
+{
+  // Write a starting marker and version.
+  outStream << "SpatialPooler" << endl;
+  outStream << version_ << endl;
+
+  // Store the simple variables first.
+  outStream << numInputs_ << " "
+            << numColumns_ << " " 
+            << potentialRadius_ << " "
+            << potentialPct_ << " "
+            << initConnectedPct_ << " "
+            << globalInhibition_ << " "
+            << numActiveColumnsPerInhArea_ << " "
+            << localAreaDensity_ << " "
+            << stimulusThreshold_ << " "
+            << inhibitionRadius_ << " "
+            << dutyCyclePeriod_ << " "
+            << maxBoost_ << " "
+            << iterationNum_ << " "
+            << iterationLearnNum_ << " "
+            << spVerbosity_ << " "
+            << updatePeriod_ << " " 
+            
+            << synPermMin_ << " "
+            << synPermMax_ << " "
+            << synPermTrimThreshold_ << " "
+            << synPermInactiveDec_ << " "
+            << synPermActiveInc_ << " "
+            << synPermBelowStimulusInc_ << " "
+            << synPermConnected_ << " "
+            << minPctOverlapDutyCycles_ << " "
+            << minPctActiveDutyCycles_ << " " 
+            << wrapAround_ << " "
+            << endl;
+
+  // Store vectors.
+  outStream << inputDimensions_.size() << " ";
+  for (auto & elem : inputDimensions_) {
+    outStream << elem << " ";
+  }
+  outStream << endl;
+
+  outStream << columnDimensions_.size() << " ";
+  for (auto & elem : columnDimensions_) {
+    outStream << elem << " ";
+  }
+  outStream << endl;
+
+  for (UInt i = 0; i < numColumns_; i++) {
+    outStream << boostFactors_[i] << " ";
+  }
+  outStream << endl;
+
+  for (UInt i = 0; i < numColumns_; i++) {
+    outStream << overlapDutyCycles_[i] << " ";
+  }
+  outStream << endl;
+
+  for (UInt i = 0; i < numColumns_; i++) {
+    outStream << activeDutyCycles_[i] << " ";
+  }
+  outStream << endl;
+
+  for (UInt i = 0; i < numColumns_; i++) {
+    outStream << minOverlapDutyCycles_[i] << " ";
+  }
+  outStream << endl;
+
+  for (UInt i = 0; i < numColumns_; i++) {
+    outStream << minActiveDutyCycles_[i] << " ";
+  }
+  outStream << endl;
+
+  for (UInt i = 0; i < numColumns_; i++) {
+    outStream << tieBreaker_[i] << " ";
+  }
+  outStream << endl;
+
+
+  // Store matrices.
+  for (UInt i = 0; i < numColumns_; i++) {
+    vector<UInt> pot;
+    pot.resize(potentialPools_.nNonZerosOnRow(i));
+    pot = potentialPools_.getSparseRow(i);
+    outStream << pot.size() << endl;
+    for (auto & elem : pot) {
+      outStream << elem << " ";
+    }
+    outStream << endl;
+  }
+  outStream << endl;
+  
+  for (UInt i = 0; i < numColumns_; i++) {
+    vector<pair<UInt, Real> > perm;
+    perm.resize(permanences_.nNonZerosOnRow(i));
+    outStream << perm.size() << endl;
+    permanences_.getRowToSparse(i, perm.begin());
+    for (auto & elem : perm) {
+      outStream << elem.first << " " << elem.second << " ";
+    }
+    outStream << endl;
+  }
+  outStream << endl;
+
+  outStream << rng_ << endl;
+
+  outStream << "~SpatialPooler" << endl;
+}
+
+void SpatialPooler::load(istream& inStream)
+{
+  // Current version
+  version_ = 2;
+
+  // Check the marker
+  string marker;
+  inStream >> marker;
+  NTA_CHECK(marker == "SpatialPooler");
+
+  // Check the saved version.
+  UInt version;
+  inStream >> version;
+  NTA_CHECK(version <= version_);  
+
+
+  // Retrieve simple variables
+  inStream >> numInputs_
+           >> numColumns_
+           >> potentialRadius_ 
+           >> potentialPct_
+           >> initConnectedPct_
+           >> globalInhibition_ 
+           >> numActiveColumnsPerInhArea_
+           >> localAreaDensity_
+           >> stimulusThreshold_
+           >> inhibitionRadius_
+           >> dutyCyclePeriod_
+           >> maxBoost_
+           >> iterationNum_
+           >> iterationLearnNum_
+           >> spVerbosity_
+           >> updatePeriod_
+            
+           >> synPermMin_
+           >> synPermMax_
+           >> synPermTrimThreshold_
+           >> synPermInactiveDec_
+           >> synPermActiveInc_
+           >> synPermBelowStimulusInc_
+           >> synPermConnected_
+           >> minPctOverlapDutyCycles_
+           >> minPctActiveDutyCycles_;
+  if (version == 1) {
+    wrapAround_ = true;
+  } else {
+    inStream >> wrapAround_;
+  }
+
+  // Retrieve vectors.
+  UInt numInputDimensions;
+  inStream >> numInputDimensions;
+  inputDimensions_.resize(numInputDimensions);
+  for (UInt i = 0; i < numInputDimensions; i++) {
+    inStream >> inputDimensions_[i];
+  }
+
+  UInt numColumnDimensions;
+  inStream >> numColumnDimensions;
+  columnDimensions_.resize(numColumnDimensions);
+  for (UInt i = 0; i < numColumnDimensions; i++) {
+    inStream >> columnDimensions_[i];
+  }
+
+  boostFactors_.resize(numColumns_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    inStream >> boostFactors_[i];
+  }
+
+  overlapDutyCycles_.resize(numColumns_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    inStream >> overlapDutyCycles_[i];
+  }
+
+  activeDutyCycles_.resize(numColumns_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    inStream >> activeDutyCycles_[i];
+  }
+
+  minOverlapDutyCycles_.resize(numColumns_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    inStream >> minOverlapDutyCycles_[i];
+  }
+
+  minActiveDutyCycles_.resize(numColumns_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    inStream >> minActiveDutyCycles_[i];
+  }
+
+  tieBreaker_.resize(numColumns_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    inStream >> tieBreaker_[i];
+  }
+
+
+  // Retrieve matrices.
+  potentialPools_.resize(numColumns_, numInputs_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    UInt nNonZerosOnRow;
+    inStream >> nNonZerosOnRow;
+    vector<UInt> pot(nNonZerosOnRow, 0);
+    for (UInt j = 0; j < nNonZerosOnRow; j++) {
+      inStream >> pot[j];
+    }
+    potentialPools_.replaceSparseRow(i,pot.begin(), pot.end());
+  }
+  
+  permanences_.resize(numColumns_, numInputs_);
+  connectedSynapses_.resize(numColumns_, numInputs_);
+  connectedCounts_.resize(numColumns_);
+  for (UInt i = 0; i < numColumns_; i++) {
+    UInt nNonZerosOnRow;
+    inStream >> nNonZerosOnRow;
+    vector<Real> perm(numInputs_, 0);
+
+    for (UInt j = 0; j < nNonZerosOnRow; j++) {
+      UInt index;
+      Real value;
+      inStream >> index;
+      inStream >> value;
+      perm[index] = value;
+    }
+    updatePermanencesForColumn_(perm, i, false);
+  }
+
+  inStream >> rng_;
+
+  inStream >> marker;
+  NTA_CHECK(marker == "~SpatialPooler");
+
+  // initialize ephemeral members
+  overlaps_.resize(numColumns_);
+  overlapsPct_.resize(numColumns_);
+  boostedOverlaps_.resize(numColumns_);
+}
+
 bool SpatialPooler::isUpdateRound_()
 {
   return (iterationNum_ % updatePeriod_) == 0;
@@ -1291,23 +1537,20 @@ void SpatialPooler::seed_(UInt64 seed)
   rng_ = Random(seed);
 }
 
-void SpatialPooler::buildMessage(capnp::MallocMessageBuilder& message)
+void SpatialPooler::buildMessage(SpatialPoolerProto::Builder& spProto)
 {
-  SpatialPoolerProto::Builder spProto = message.initRoot<SpatialPoolerProto>();
-
-  spProto.setSeed(rng_.getSeed());
+  auto random = spProto.initRandom();
+  rng_.save(random);
   spProto.setNumInputs(numInputs_);
   spProto.setNumColumns(numColumns_);
 
-  capnp::List<UInt32>::Builder columnDims =
-      spProto.initColumnDimensions(columnDimensions_.size());
+  auto columnDims = spProto.initColumnDimensions(columnDimensions_.size());
   for (int i = 0; i < columnDimensions_.size(); ++i)
   {
     columnDims.set(i, columnDimensions_[i]);
   }
 
-  capnp::List<UInt32>::Builder inputDims =
-      spProto.initInputDimensions(inputDimensions_.size());
+  auto inputDims = spProto.initInputDimensions(inputDimensions_.size());
   for (int i = 0; i < inputDimensions_.size(); ++i)
   {
     inputDims.set(i, inputDimensions_[i]);
@@ -1340,20 +1583,18 @@ void SpatialPooler::buildMessage(capnp::MallocMessageBuilder& message)
   spProto.setIterationNum(iterationNum_);
   spProto.setIterationLearnNum(iterationLearnNum_);
 
-  capnp::List<capnp::List<UInt32>>::Builder potentialPools =
-      spProto.initPotentialPools(numColumns_);
+  auto potentialPools = spProto.initPotentialPools(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
-    vector<UInt> const & pot = potentialPools_.getSparseRow(i);
-    capnp::List<UInt32>::Builder pool = potentialPools.init(i, pot.size());
+    auto & pot = potentialPools_.getSparseRow(i);
+    auto pool = potentialPools.init(i, pot.size());
     for (UInt j = 0; j < pot.size(); ++j)
     {
       pool.set(j, pot[j]);
     }
   }
 
-  capnp::List<capnp::List<SparseFloat>>::Builder permanences =
-      spProto.initPermanences(numColumns_);
+  auto permanences = spProto.initPermanences(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     // TODO: Get a reference to the vector rather than building a new one?
@@ -1361,83 +1602,74 @@ void SpatialPooler::buildMessage(capnp::MallocMessageBuilder& message)
     perm.resize(permanences_.nNonZerosOnRow(i));
     permanences_.getRowToSparse(i, perm.begin());
 
-    capnp::List<SparseFloat>::Builder pool = permanences.init(i, perm.size());
+    auto pool = permanences.init(i, perm.size());
 
     for (UInt j = 0; j < perm.size(); ++j)
     {
-      SparseFloat::Builder sf = pool[j];
+      auto sf = pool[j];
       sf.setIndex(perm[j].first);
       sf.setValue(perm[j].second);
     }
   }
 
-  capnp::List<Real32>::Builder tieBreaker =
-      spProto.initTieBreaker(numColumns_);
+  auto tieBreaker = spProto.initTieBreaker(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     tieBreaker.set(i, tieBreaker_[i]);
   }
 
-  // Connected synapses not saved...
-  // Connected counts not saved...
-
-  capnp::List<Real32>::Builder overlapDutyCycles =
-      spProto.initOverlapDutyCycles(numColumns_);
+  auto overlapDutyCycles = spProto.initOverlapDutyCycles(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     overlapDutyCycles.set(i, overlapDutyCycles_[i]);
   }
 
-  capnp::List<Real32>::Builder activeDutyCycles =
-      spProto.initActiveDutyCycles(numColumns_);
+  auto activeDutyCycles = spProto.initActiveDutyCycles(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     activeDutyCycles.set(i, activeDutyCycles_[i]);
   }
 
-  capnp::List<Real32>::Builder minOverlapDutyCycles =
-      spProto.initMinOverlapDutyCycles(numColumns_);
+  auto minOverlapDutyCycles = spProto.initMinOverlapDutyCycles(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     minOverlapDutyCycles.set(i, minOverlapDutyCycles_[i]);
   }
 
-  capnp::List<Real32>::Builder minActiveDutyCycles =
-      spProto.initMinActiveDutyCycles(numColumns_);
+  auto minActiveDutyCycles = spProto.initMinActiveDutyCycles(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     minActiveDutyCycles.set(i, minActiveDutyCycles_[i]);
   }
 
-  capnp::List<Real32>::Builder boostFactors =
-      spProto.initBoostFactors(numColumns_);
+  auto boostFactors = spProto.initBoostFactors(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     boostFactors.set(i, boostFactors_[i]);
   }
 
-  //outStream << rng_ << endl;
 }
 
-void SpatialPooler::save(ostream& stream)
+void SpatialPooler::write(ostream& stream)
 {
   capnp::MallocMessageBuilder message;
-  buildMessage(message);
-  proto::StdOutputStream out(stream);
-  writeMessage(out, message);
+  SpatialPoolerProto::Builder spProto = message.initRoot<SpatialPoolerProto>();
+  buildMessage(spProto);
+  proto::writeMessage(stream, message);
 }
 
 void SpatialPooler::write(int fd)
 {
   capnp::MallocMessageBuilder message;
-  buildMessage(message);
+  SpatialPoolerProto::Builder spProto = message.initRoot<SpatialPoolerProto>();
+  buildMessage(spProto);
   writeMessageToFd(fd, message);
 }
 
 // Implementation note: this method sets up the instance using data from
 // inStream. This method does not call initialize. As such we have to be careful
 // that everything in initialize is handled properly here.
-void SpatialPooler::load(istream& stream)
+void SpatialPooler::read(istream& stream)
 {
   proto::StdInputStream in(stream);
   capnp::InputStreamMessageReader message(in);
@@ -1454,149 +1686,107 @@ void SpatialPooler::read(int fd)
 
 void SpatialPooler::loadProto(SpatialPoolerProto::Reader& spProto)
 {
-  rng_ = Random(spProto.getSeed());
+  auto randomProto = spProto.getRandom();
+  rng_.load(randomProto);
   numInputs_ = spProto.getNumInputs();
   numColumns_ = spProto.getNumColumns();
 
   columnDimensions_.clear();
-  for (UInt dimension : spProto.getColumnDimensions()) {
+  for (UInt dimension : spProto.getColumnDimensions())
+  {
     columnDimensions_.push_back(dimension);
   }
 
+  inputDimensions_.clear();
+  for (UInt dimension : spProto.getInputDimensions())
+  {
+    inputDimensions_.push_back(dimension);
+  }
 
+  potentialRadius_ = spProto.getPotentialRadius();
 
-  //// Current version
-  //version_ = 2;
+  potentialPct_ = spProto.getPotentialPct();
+  inhibitionRadius_ = spProto.getInhibitionRadius();
+  globalInhibition_ = spProto.getGlobalInhibition();
+  numActiveColumnsPerInhArea_ = spProto.getNumActiveColumnsPerInhArea();
+  localAreaDensity_ = spProto.getLocalAreaDensity();
+  stimulusThreshold_ = spProto.getStimulusThreshold();
+  synPermInactiveDec_ = spProto.getSynPermInactiveDec();
+  synPermActiveInc_ = spProto.getSynPermActiveInc();
+  synPermBelowStimulusInc_ = spProto.getSynPermBelowStimulusInc();
+  synPermConnected_ = spProto.getSynPermConnected();
+  minPctOverlapDutyCycles_ = spProto.getMinPctOverlapDutyCycles();
+  minPctActiveDutyCycles_ = spProto.getMinPctActiveDutyCycles();
+  dutyCyclePeriod_ = spProto.getDutyCyclePeriod();
+  maxBoost_ = spProto.getMaxBoost();
+  wrapAround_ = spProto.getWrapAround();
+  spVerbosity_ = spProto.getSpVerbosity();
 
-  //// Check the marker
-  //string marker;
-  //inStream >> marker;
-  //NTA_CHECK(marker == "SpatialPooler");
+  synPermMin_ = spProto.getSynPermMin();
+  synPermMax_ = spProto.getSynPermMax();
+  synPermTrimThreshold_ = spProto.getSynPermTrimThreshold();
+  updatePeriod_ = spProto.getUpdatePeriod();
 
-  //// Check the saved version.
-  //UInt version;
-  //inStream >> version;
-  //NTA_CHECK(version <= version_);  
+  version_ = spProto.getVersion();
+  iterationNum_ = spProto.getIterationNum();
+  iterationLearnNum_ = spProto.getIterationLearnNum();
 
+  potentialPools_.resize(numColumns_, numInputs_);
+  auto potentialPools = spProto.getPotentialPools();
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    potentialPools_.replaceSparseRow(
+        i, potentialPools[i].begin(), potentialPools[i].end());
+  }
 
-  //// Retrieve simple variables
-  //inStream >> numInputs_
-  //         >> numColumns_
-  //         >> potentialRadius_ 
-  //         >> potentialPct_
-  //         >> initConnectedPct_
-  //         >> globalInhibition_ 
-  //         >> numActiveColumnsPerInhArea_
-  //         >> localAreaDensity_
-  //         >> stimulusThreshold_
-  //         >> inhibitionRadius_
-  //         >> dutyCyclePeriod_
-  //         >> maxBoost_
-  //         >> iterationNum_
-  //         >> iterationLearnNum_
-  //         >> spVerbosity_
-  //         >> updatePeriod_
-  //          
-  //         >> synPermMin_
-  //         >> synPermMax_
-  //         >> synPermTrimThreshold_
-  //         >> synPermInactiveDec_
-  //         >> synPermActiveInc_
-  //         >> synPermBelowStimulusInc_
-  //         >> synPermConnected_
-  //         >> minPctOverlapDutyCycles_
-  //         >> minPctActiveDutyCycles_;
-  //if (version == 1) {
-  //  wrapAround_ = true;
-  //} else {
-  //  inStream >> wrapAround_;
-  //}
+  permanences_.resize(numColumns_, numInputs_);
+  connectedSynapses_.resize(numColumns_, numInputs_);
+  connectedCounts_.resize(numColumns_);
+  auto permanences = spProto.getPermanences();
+  for (UInt i = 0; i < numColumns_; ++i)
+  {
+    vector<Real> colPerms(numInputs_, 0);
+    for (auto perm : permanences[i])
+    {
+      colPerms[perm.getIndex()] = perm.getValue();
+    }
+    updatePermanencesForColumn_(colPerms, i, false);
+  }
 
-  //// Retrieve vectors.
-  //UInt numInputDimensions;
-  //inStream >> numInputDimensions;
-  //inputDimensions_.resize(numInputDimensions);
-  //for (UInt i = 0; i < numInputDimensions; i++) {
-  //  inStream >> inputDimensions_[i];
-  //}
+  for (auto value : spProto.getTieBreaker())
+  {
+    tieBreaker_.push_back(value);
+  }
 
-  //UInt numColumnDimensions;
-  //inStream >> numColumnDimensions;
-  //columnDimensions_.resize(numColumnDimensions);
-  //for (UInt i = 0; i < numColumnDimensions; i++) {
-  //  inStream >> columnDimensions_[i];
-  //}
+  for (auto value : spProto.getOverlapDutyCycles())
+  {
+    overlapDutyCycles_.push_back(value);
+  }
 
-  //boostFactors_.resize(numColumns_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  inStream >> boostFactors_[i];
-  //}
+  for (auto value : spProto.getActiveDutyCycles())
+  {
+    activeDutyCycles_.push_back(value);
+  }
 
-  //overlapDutyCycles_.resize(numColumns_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  inStream >> overlapDutyCycles_[i];
-  //}
+  for (auto value : spProto.getMinOverlapDutyCycles())
+  {
+    minOverlapDutyCycles_.push_back(value);
+  }
 
-  //activeDutyCycles_.resize(numColumns_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  inStream >> activeDutyCycles_[i];
-  //}
+  for (auto value : spProto.getMinActiveDutyCycles())
+  {
+    minActiveDutyCycles_.push_back(value);
+  }
 
-  //minOverlapDutyCycles_.resize(numColumns_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  inStream >> minOverlapDutyCycles_[i];
-  //}
+  for (auto value : spProto.getBoostFactors())
+  {
+    boostFactors_.push_back(value);
+  }
 
-  //minActiveDutyCycles_.resize(numColumns_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  inStream >> minActiveDutyCycles_[i];
-  //}
-
-  //tieBreaker_.resize(numColumns_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  inStream >> tieBreaker_[i];
-  //}
-
-
-  //// Retrieve matrices.
-  //potentialPools_.resize(numColumns_, numInputs_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  UInt nNonZerosOnRow;
-  //  inStream >> nNonZerosOnRow;
-  //  vector<UInt> pot(nNonZerosOnRow, 0);
-  //  for (UInt j = 0; j < nNonZerosOnRow; j++) {
-  //    inStream >> pot[j];
-  //  }
-  //  potentialPools_.replaceSparseRow(i,pot.begin(), pot.end());
-  //}
-  //
-  //permanences_.resize(numColumns_, numInputs_);
-  //connectedSynapses_.resize(numColumns_, numInputs_);
-  //connectedCounts_.resize(numColumns_);
-  //for (UInt i = 0; i < numColumns_; i++) {
-  //  UInt nNonZerosOnRow;
-  //  inStream >> nNonZerosOnRow;
-  //  vector<Real> perm(numInputs_, 0);
-
-  //  for (UInt j = 0; j < nNonZerosOnRow; j++) {
-  //    UInt index;
-  //    Real value;
-  //    inStream >> index;
-  //    inStream >> value;
-  //    perm[index] = value;
-  //  }
-  //  updatePermanencesForColumn_(perm, i, false);
-  //}
-
-  //inStream >> rng_;
-
-  //inStream >> marker;
-  //NTA_CHECK(marker == "~SpatialPooler");
-
-  //// initialize ephemeral members
-  //overlaps_.resize(numColumns_);
-  //overlapsPct_.resize(numColumns_);
-  //boostedOverlaps_.resize(numColumns_);
+  // Initialize ephemerals
+  overlaps_.resize(numColumns_);
+  overlapsPct_.resize(numColumns_);
+  boostedOverlaps_.resize(numColumns_);
 
 }
 

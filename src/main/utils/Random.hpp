@@ -24,13 +24,16 @@
     Random Number Generator interface
 */
 
-#include <nta/types/Types.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include <nta/utils/Log.hpp>
 #include <utility>
+
+#include <nta/types/Types.hpp>
+#include <nta/utils/Log.hpp>
+
+#include "RandomProto.capnp.h"
 
 #ifndef NTA_RANDOM_HPP
 #define NTA_RANDOM_HPP
@@ -170,6 +173,13 @@ namespace nta {
     static void initSeeder(const RandomSeedFuncPtr r);
 
     static void shutdown();
+
+    void save(int fd) const;
+    void save(std::ostream& os) const;
+    void save(RandomProto::Builder& proto) const;
+    void load(int fd);
+    void load(std::istream& is);
+    void load(RandomProto::Reader& proto);
 
   protected:
 
