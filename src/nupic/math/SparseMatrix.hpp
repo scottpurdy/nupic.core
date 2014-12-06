@@ -2924,6 +2924,38 @@ namespace nupic {
       return out;
     }
 
+    /**
+     * Write to a Cap'n Proto object.
+     */
+    //template<>
+    //inline void write(SparseMatrixProto::Builder& proto) <UInt32, Real32> const
+    inline void write(SparseMatrixProto::Builder& proto) const
+    {
+      auto protoRows = proto.initValues(nnzr_);
+      for (UInt i = 0; i < nnzr_; ++i)
+      {
+        vector<pair<UInt32, Real32> > row(nNonZerosOnRow(i));
+        getRowToSparse(i, row.begin());
+
+        auto protoRow = protoRows.init(i, row.size());
+
+        for (UInt j = 0; j < row.size(); ++j)
+        {
+          protoRow.set(j, row[j]);
+        }
+      }
+      //auto protoRows = proto.initValues(nnzr_);
+      //for (UInt i = 0; i < nnzr_; ++i)
+      //{
+      //  auto& values = getSparseRow(i);
+      //  auto protoValues = rows.init(i, values.size());
+      //  for (UInt j = 0; j < values.size(); ++j)
+      //  {
+      //    protoValues.set(j, values[j]
+      //  }
+      //}
+    }
+
     //--------------------------------------------------------------------------------
     /**
      * Reads this SparseMatrix from binary representation.
