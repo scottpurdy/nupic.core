@@ -193,6 +193,7 @@ include_directories(${CAPNP_INCLUDE_DIRS})
 # when compiling later on.
 set(CAPNP_SPECS
     nupic/algorithms/SpatialPoolerProto.capnp
+    nupic/math/SparseMatrixProto.capnp
     nupic/utils/RandomProto.capnp
 )
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS ${CAPNP_SPECS})

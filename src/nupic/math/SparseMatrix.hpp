@@ -29,17 +29,20 @@
 
 //----------------------------------------------------------------------
 
-#include <iomanip>
 #include <cstdio> // sprintf
+#include <iomanip>
+#include <vector>
+
 #include <boost/unordered_set.hpp>
 
+#include <nupic/math/ArrayAlgo.hpp>
+#include <nupic/math/Math.hpp>
+#include <nupic/math/SparseMatrixProto.capnp.h>
+#include <nupic/math/StlIo.hpp>
 #include <nupic/math/Utils.hpp>
 #include <nupic/ntypes/MemParser.hpp>
 #include <nupic/ntypes/MemStream.hpp>
 
-#include <nupic/math/Math.hpp>
-#include <nupic/math/ArrayAlgo.hpp>
-#include <nupic/math/StlIo.hpp>
 
 //--------------------------------------------------------------------------------
 
@@ -2927,21 +2930,23 @@ namespace nupic {
     /**
      * Write to a Cap'n Proto object.
      */
-    //template<>
-    //inline void write(SparseMatrixProto::Builder& proto) <UInt32, Real32> const
     inline void write(SparseMatrixProto::Builder& proto) const
     {
-      auto protoRows = proto.initValues(nnzr_);
-      for (UInt i = 0; i < nnzr_; ++i)
+      proto.setNumRows(nrows_);
+      proto.setNumColumns(ncols_);
+      auto protoRows = proto.initValues(nrows_);
+      for (UInt i = 0; i < nrows_; ++i)
       {
-        vector<pair<UInt32, Real32> > row(nNonZerosOnRow(i));
+        std::vector<std::pair<UInt32, Real32> > row(nNonZerosOnRow(i));
         getRowToSparse(i, row.begin());
 
         auto protoRow = protoRows.init(i, row.size());
 
         for (UInt j = 0; j < row.size(); ++j)
         {
-          protoRow.set(j, row[j]);
+          auto pair = protoRow[j];
+          pair.setIndex(row[j].first);
+          pair.setValue(row[j].second);
         }
       }
       //auto protoRows = proto.initValues(nnzr_);
@@ -2954,6 +2959,24 @@ namespace nupic {
       //    protoValues.set(j, values[j]
       //  }
       //}
+    }
+
+    /**
+     * Read from a Cap'n Proto object.
+     */
+    inline void read(SparseMatrixProto::Reader& proto)
+    {
+      resize(proto.getNumRows(), proto.getNumColumns());
+      auto values = proto.getValues();
+      for (UInt i = 0; i < numColumns_; ++i)
+      {
+        vector<Real> colPerms(numInputs_, 0);
+        for (auto perm : permanences[i])
+        {
+          colPerms[perm.getIndex()] = perm.getValue();
+        }
+        setRowFromDense(i, colPerms);
+      }
     }
 
     //--------------------------------------------------------------------------------

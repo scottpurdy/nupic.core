@@ -4,6 +4,7 @@ using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("nupic::algorithms::spatial_pooler");
 
 # TODO: Use absolute path
+using import "../math/SparseMatrixProto.capnp".SparseMatrixProto;
 using import "../utils/RandomProto.capnp".RandomProto;
 
 # Next ID: 37
@@ -46,7 +47,7 @@ struct SpatialPoolerProto {
 
   # List length equals number of columns, elements are SparseFloat instances with
   # an input bit index and the permanence value for all non-zero permanences.
-  permanences @28 :List(List(SparseFloat));
+  permanences @28 :SparseMatrixProto;
 
   # Tie break float values for each column to break ties
   tieBreaker @29 :List(Float32);
