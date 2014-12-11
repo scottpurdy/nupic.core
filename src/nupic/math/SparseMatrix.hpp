@@ -2934,13 +2934,14 @@ namespace nupic {
     {
       proto.setNumRows(nrows_);
       proto.setNumColumns(ncols_);
-      auto protoRows = proto.initValues(nrows_);
+
+      auto protoRows = proto.initRows(nrows_);
       for (UInt i = 0; i < nrows_; ++i)
       {
         std::vector<std::pair<UInt32, Real32> > row(nNonZerosOnRow(i));
         getRowToSparse(i, row.begin());
 
-        auto protoRow = protoRows.init(i, row.size());
+        auto protoRow = protoRows[i].initValues(row.size());
 
         for (UInt j = 0; j < row.size(); ++j)
         {
@@ -2966,16 +2967,24 @@ namespace nupic {
      */
     inline void read(SparseMatrixProto::Reader& proto)
     {
-      resize(proto.getNumRows(), proto.getNumColumns());
-      auto values = proto.getValues();
-      for (UInt i = 0; i < numColumns_; ++i)
+      auto nrows = proto.getNumRows();
+      auto ncols = proto.getNumColumns();
+      resize(nrows, ncols);
+
+      auto rows = proto.getRows();
+      for (UInt i = 0; i < nrows; ++i)
       {
-        vector<Real> colPerms(numInputs_, 0);
-        for (auto perm : permanences[i])
+        auto row = rows[i].getValues();
+        std::vector<UInt32> rowIndices(row.size());
+        std::vector<Real32> rowValues(row.size());
+        for (UInt j = 0; j < row.size(); ++j)
         {
-          colPerms[perm.getIndex()] = perm.getValue();
+          auto sparseFloat = row[j];
+          rowIndices[j] = sparseFloat.getIndex();
+          rowValues[j] = sparseFloat.getValue();
         }
-        setRowFromDense(i, colPerms);
+        setRowFromSparse(i, rowIndices.begin(), rowIndices.end(),
+                         rowValues.begin());
       }
     }
 

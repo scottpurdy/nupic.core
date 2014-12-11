@@ -1294,6 +1294,16 @@ void SpatialPooler::seed_(UInt64 seed)
   rng_ = Random(seed);
 }
 
+UInt SpatialPooler::persistentSize()
+{
+  // TODO: this won't scale!
+  stringstream s;
+  s.flags(ios::scientific);
+  s.precision(numeric_limits<double>::digits10 + 1);
+  this->save(s);
+  return s.str().size();
+}
+
 void SpatialPooler::save(ostream& outStream)
 {
   // Write a starting marker and version.
@@ -1720,12 +1730,13 @@ void SpatialPooler::read(SpatialPoolerProto::Reader& proto)
   permanences_.resize(numColumns_, numInputs_);
   connectedSynapses_.resize(numColumns_, numInputs_);
   connectedCounts_.resize(numColumns_);
-  permanences_.read(proto.getPermanences());
-  auto permanences = proto.getPermanences().getValues();
+  auto permanences = proto.getPermanences();
+  permanences_.read(permanences);
+  auto permanenceValues = permanences.getRows();
   for (UInt i = 0; i < numColumns_; ++i)
   {
     vector<Real> colPerms(numInputs_, 0);
-    for (auto perm : permanences[i])
+    for (auto perm : permanenceValues[i].getValues())
     {
       colPerms[perm.getIndex()] = perm.getValue();
     }

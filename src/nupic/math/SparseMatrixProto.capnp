@@ -1,13 +1,15 @@
 @0xeefc26a597cc6a4e;
 
-using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("nupic");
+# Next ID: 3
+struct SparseMatrixProto {
+  numRows @0 :UInt32;
+  numColumns @1 :UInt32;
+  rows @2 :List(SparseFloatList);
+}
 
 # Next ID: 1
-struct SparseMatrixProto {
-  values @0 :List(List(SparseFloat));
-  numRows @1 :UInt32;
-  numCols @2 :UInt32;
+struct SparseFloatList {
+  values @0 :List(SparseFloat);
 }
 
 # Next ID: 2

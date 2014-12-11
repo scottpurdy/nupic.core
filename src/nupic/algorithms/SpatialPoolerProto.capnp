@@ -1,8 +1,5 @@
 @0xaf55f2dcb92e4304;
 
-using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("nupic::algorithms::spatial_pooler");
-
 # TODO: Use absolute path
 using import "../math/SparseMatrixProto.capnp".SparseMatrixProto;
 using import "../utils/RandomProto.capnp".RandomProto;
@@ -57,15 +54,4 @@ struct SpatialPoolerProto {
   minOverlapDutyCycles @32 :List(Float32);
   minActiveDutyCycles @33 :List(Float32);
   boostFactors @34 :List(Float32);
-}
-
-# TODO: Move these to sparse matrix
-struct SparseFloat {
-  index @0 :UInt32;
-  value @1 :Float32;
-}
-
-struct SparseBool {
-  index @0 :UInt32;
-  value @1 :Bool;
 }
