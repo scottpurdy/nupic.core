@@ -1599,14 +1599,17 @@ void SpatialPooler::write(SpatialPoolerProto::Builder& proto)
   proto.setIterationNum(iterationNum_);
   proto.setIterationLearnNum(iterationLearnNum_);
 
-  auto potentialPools = proto.initPotentialPools(numColumns_);
+  auto potentialPools = proto.initPotentialPools();
+  potentialPools.setNumRows(numColumns_);
+  potentialPools.setNumColumns(numInputs_);
+  auto potentialPoolIndices = potentialPools.initIndices(numColumns_);
   for (UInt i = 0; i < numColumns_; ++i)
   {
     auto & pot = potentialPools_.getSparseRow(i);
-    auto pool = potentialPools.init(i, pot.size());
+    auto indices = potentialPoolIndices.init(i, pot.size());
     for (UInt j = 0; j < pot.size(); ++j)
     {
-      pool.set(j, pot[j]);
+      indices.set(j, pot[j]);
     }
   }
 
@@ -1719,19 +1722,14 @@ void SpatialPooler::read(SpatialPoolerProto::Reader& proto)
   iterationNum_ = proto.getIterationNum();
   iterationLearnNum_ = proto.getIterationLearnNum();
 
-  potentialPools_.resize(numColumns_, numInputs_);
-  auto potentialPools = proto.getPotentialPools();
-  for (UInt i = 0; i < numColumns_; ++i)
-  {
-    potentialPools_.replaceSparseRow(
-        i, potentialPools[i].begin(), potentialPools[i].end());
-  }
+  auto potentialPoolsProto = proto.getPotentialPools();
+  potentialPools_.read(potentialPoolsProto);
 
-  permanences_.resize(numColumns_, numInputs_);
   connectedSynapses_.resize(numColumns_, numInputs_);
   connectedCounts_.resize(numColumns_);
   auto permanences = proto.getPermanences();
   permanences_.read(permanences);
+  // additional initialization using permanence values
   auto permanenceValues = permanences.getRows();
   for (UInt i = 0; i < numColumns_; ++i)
   {

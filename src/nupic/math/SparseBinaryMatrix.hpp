@@ -1455,6 +1455,37 @@ namespace nupic {
     }
 
     //--------------------------------------------------------------------------------
+    inline void write(SparseBinaryMatrixProto::Builder& proto) const
+    {
+      proto.setNumRows(nRows());
+      proto.setNumColumns(nCols());
+      auto indices = proto.initIndices(nRows());
+      for (UInt i = 0; i < nRows(); ++i)
+      {
+        auto & sparseRow = getSparseRow(i);
+        auto rowProto = indices[i].init(sparseRow.size());
+        // TODO: replaces with a copy if possible
+        for (UInt j = 0; j < sparseRow.size(); ++j)
+        {
+          rowProto.set(j, sparseRow[j]);
+        }
+      }
+    }
+
+    //--------------------------------------------------------------------------------
+    inline void read(SparseBinaryMatrixProto::Reader& proto)
+    {
+      auto rows = proto.getNumRows();
+      auto columns = proto.getNumColumns();
+      resize(rows, columns);
+      auto indices = proto.getIndices();
+      for (UInt i = 0; i < rows; ++i)
+      {
+        replaceSparseRow(i, indices[i].begin(), indices[i].end());
+      }
+    }
+
+    //--------------------------------------------------------------------------------
     template <typename InputIterator>
     inline void 
     fromSparseVector(size_type nrows, size_type ncols, 

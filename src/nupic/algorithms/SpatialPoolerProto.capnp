@@ -1,6 +1,7 @@
 @0xaf55f2dcb92e4304;
 
 # TODO: Use absolute path
+using import "../math/SparseBinaryMatrixProto.capnp".SparseBinaryMatrixProto;
 using import "../math/SparseMatrixProto.capnp".SparseMatrixProto;
 using import "../utils/RandomProto.capnp".RandomProto;
 
@@ -40,7 +41,7 @@ struct SpatialPoolerProto {
 
   # List length equals number of columns, elements are indices of input bits
   # in potential pool
-  potentialPools @27 :List(List(UInt32));
+  potentialPools @27 :SparseBinaryMatrixProto;
 
   # List length equals number of columns, elements are SparseFloat instances with
   # an input bit index and the permanence value for all non-zero permanences.
