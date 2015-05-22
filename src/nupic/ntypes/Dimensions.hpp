@@ -21,7 +21,7 @@
  * ---------------------------------------------------------------------
  */
 
-/** @file 
+/** @file
  * Interface for the Dimensions class
  */
 
@@ -35,21 +35,21 @@ namespace nupic
 {
   /**
    * @typedef Coordinate
-   * 
+   *
    * A Coordinate is the location of a single cell in an n-dimensional
    * grid described by a Dimensions object.
    *
-   * It's a direct @c typedef, so it has the exactly the same interface as 
-   * @c std::vector<size_t> . A value with the index of `i` in the vector 
+   * It's a direct @c typedef, so it has the exactly the same interface as
+   * @c std::vector<size_t> . A value with the index of `i` in the vector
    * represents the location of the cell along the `i`th dimension.
    *
-   * @note It must have the same number of dimensions as its corresponding 
+   * @note It must have the same number of dimensions as its corresponding
    * Dimensions object.
    *
    * @internal
-   *  
+   *
    * Because a vector of a basic type can be directly wrapped
-   * by swig, we do not need a separate class. 
+   * by swig, we do not need a separate class.
    *
    * @endinternal
    */
@@ -58,13 +58,13 @@ namespace nupic
   /**
    * Represents the dimensions of a Region.
    *
-   * A Dimensions object is an n-dimensional grid, consists of many cells, and 
-   * each dimension has a size, i.e. how many cells can there be along this dimension. 
-   * 
+   * A Dimensions object is an n-dimensional grid, consists of many cells, and
+   * each dimension has a size, i.e. how many cells can there be along this dimension.
+   *
    * A node within a Region is represented by a cell of a n-dimensional grid,
    * identified by a Coordinate.
    *
-   * It's implemented by a @c vector of @c size_t plus a few methods for 
+   * It's implemented by a @c vector of @c size_t plus a few methods for
    * convenience and for wrapping.
    *
    * @nosubgrouping
@@ -73,29 +73,29 @@ namespace nupic
   class Dimensions : public std::vector<size_t>
   {
   public:
-    /** 
+    /**
      *
      * @name Constructors
      *
      * @{
-     * 
+     *
      */
-    
+
     /**
      * Create a new Dimensions object.
      *
      * @note Default dimensions are unspecified, see isUnspecified()
-     * 
+     *
      */
     Dimensions();
 
-    /** 
+    /**
      * Create a new Dimensions object from a @c std::vector<size_t>.
-     * 
+     *
      * @param v
      *        A @c std::vector of @c size_t, the value with the index of @a n
-     *        is the size of the @a n th dimension 
-     *        
+     *        is the size of the @a n th dimension
+     *
      */
     Dimensions(std::vector<size_t> v);
 
@@ -103,13 +103,13 @@ namespace nupic
 
      * @param x
      *        The size of the 1st dimension
-     * 
+     *
      */
     Dimensions(size_t x);
 
-    /** 
+    /**
      * Create a new 2-dimension Dimensions.
-     * 
+     *
      * @param x
      *        The size of the 1st dimension
      * @param y
@@ -117,9 +117,9 @@ namespace nupic
      */
     Dimensions(size_t x, size_t y);
 
-    /** 
+    /**
      * Create a new 3-dimension Dimensions.
-     * 
+     *
      * @param x
      *        The size of the 1st dimension
      * @param y
@@ -129,39 +129,39 @@ namespace nupic
      */
     Dimensions(size_t x, size_t y, size_t z);
 
-    /** 
+    /**
      *
      * @}
-     * 
+     *
      * @name Properties
      *
      * @{
-     * 
+     *
      */
 
     /**
-     * Get the count of cells in the grid, which is the product of the sizes of 
+     * Get the count of cells in the grid, which is the product of the sizes of
      * the dimensions.
-     * 
-     * @returns 
+     *
+     * @returns
      *        The count of cells in the grid.
      */
-    size_t 
+    size_t
     getCount() const;
 
     /**
      *
      * Get the number of dimensions.
-     * 
+     *
      * @returns number of dimensions
-     * 
+     *
      */
     size_t
     getDimensionCount() const;
 
     /**
      * Get the size of a dimension.
-     * 
+     *
      * @param index
      *        The index of the dimension
      *
@@ -173,26 +173,26 @@ namespace nupic
     size_t
     getDimension(size_t index) const;
 
-    /** 
+    /**
      *
      * @}
-     * 
+     *
      * @name Boolean properties
      *
      * There are two "special" values for dimensions:
-     * 
-     * * Dimensions of `[]` (`dims.size()==0`) means "not yet known" aka 
+     *
+     * * Dimensions of `[]` (`dims.size()==0`) means "not yet known" aka
      * "unspecified", see isUnspecified()
-     * * Dimensions of `[0]`  (`dims.size()==1 && dims[0] == 0`) means 
+     * * Dimensions of `[0]`  (`dims.size()==1 && dims[0] == 0`) means
      * "don't care", see isDontcare()
      *
      * @{
-     * 
+     *
      */
 
     /**
      * Tells whether the Dimensions object is "unspecified".
-     * 
+     *
      * @returns
      *     Whether the Dimensions object is "unspecified"
      *
@@ -204,7 +204,7 @@ namespace nupic
     /**
      *
      * Tells whether the Dimensions object is "don't care".
-     * 
+     *
      * @returns
      *     Whether the Dimensions object is "don't care"
      */
@@ -219,7 +219,7 @@ namespace nupic
      *   * "valid"
      *   * NOT "unspecified"
      *   * NOT "don't care"
-     *   
+     *
      * @returns
      *       Whether the Dimensions object is "specified"
      *
@@ -234,33 +234,33 @@ namespace nupic
      * @returns
      *       Whether the sizes of all dimensions are 1, e.g. [1], [1 1], [1 1 1], etc.
      */
-    bool 
+    bool
     isOnes() const;
 
     /**
      * Tells whether Dimensions is "valid".
-     * 
+     *
      * A Dimensions object is valid if it specifies actual dimensions, i.e. all
-     * dimensions have a size greater than 0, or is a special value 
-     * ("unspecified"/"don't care"). 
-     * 
+     * dimensions have a size greater than 0, or is a special value
+     * ("unspecified"/"don't care").
+     *
      * A Dimensions object is invalid if any dimensions are 0 (except for "don't care")
-     * 
+     *
      * @returns
      *       Whether Dimensions is "valid"
      */
     bool
     isValid() const;
 
-    /** 
+    /**
      *
      * @}
-     * 
+     *
      * @name Coordinate<->index mapping
      *
      * Coordinate<->index mapping is in lower-major order, i.e.
      * for Region with dimensions `[2,3]`:
-     * 
+     *
      *     [0,0] -> index 0
      *     [1,0] -> index 1
      *     [0,1] -> index 2
@@ -269,7 +269,7 @@ namespace nupic
      *     [1,2] -> index 5
      *
      * @{
-     * 
+     *
      */
 
     /**
@@ -277,7 +277,7 @@ namespace nupic
      *
      * @param coordinate
      *        The coordinate to be converted
-     *   
+     *
      * @returns
      *        The linear index corresponding to @a coordinate
      */
@@ -289,35 +289,35 @@ namespace nupic
      *
      * @param index
      *        The linear index to be converted
-     * 
+     *
      * @returns
      *        The Coordinate corresponding to @a index
      */
     Coordinate
     getCoordinate(const size_t index) const;
 
-    /** 
+    /**
      *
      * @}
-     * 
+     *
      * @name Misc
      *
      * @{
-     * 
+     *
      */
-    
+
     /**
      *
      * Convert the Dimensions object to string representation.
-     * 
+     *
      * In most cases, we want a human-readable string, but for
      * serialization we want only the actual dimension values
-     * 
+     *
      * @param humanReadable
      *        The default is @c true, make the string human-readable,
      *        set to @c false for serialization
-     *        
-     * @returns 
+     *
+     * @returns
      *        The string representation of the Dimensions object
      */
     std::string
@@ -325,12 +325,12 @@ namespace nupic
 
     /**
      * Promote the Dimensions object to a new dimensionality.
-     * 
+     *
      * @param newDimensionality
-     *        The new dimensionality to promote to, it can be greater than, 
+     *        The new dimensionality to promote to, it can be greater than,
      *        smaller than or equal to current dimensionality
      *
-     * @note The sizes of all dimensions must be 1( i.e. isOnes() returns true), 
+     * @note The sizes of all dimensions must be 1( i.e. isOnes() returns true),
      * or an exception will be thrown.
      */
     void
@@ -339,13 +339,13 @@ namespace nupic
     /**
      * The equivalence operator.
      *
-     * Two Dimensions objects will be considered equivalent, if any of the 
+     * Two Dimensions objects will be considered equivalent, if any of the
      * following satisfies:
      *
-     * * They have the same number of dimensions and the same size for every 
+     * * They have the same number of dimensions and the same size for every
      * dimension.
-     * * Both of them have the size of 1 for everything dimensions, despite of 
-     * how many dimensions they have, i.e. isOnes() returns @c true for both 
+     * * Both of them have the size of 1 for everything dimensions, despite of
+     * how many dimensions they have, i.e. isOnes() returns @c true for both
      * of them. Some linking scenarios require us to treat [1] equivalent to [1 1] etc.
      *
      * @param dims2
@@ -353,7 +353,7 @@ namespace nupic
      *
      * @returns
      *        Whether this Dimensions object is equivalent to @a dims2.
-     *       
+     *
      */
     bool
     operator == (const Dimensions& dims2) const;
@@ -370,7 +370,7 @@ namespace nupic
     bool
     operator != (const Dimensions& dims2) const;
 
-    /** 
+    /**
      *
      * @}
      *

@@ -24,6 +24,10 @@
  * Implementation of Network test
  */
 
+// TODO: remove
+#include <fstream>
+#include <sstream>
+
 #include "NetworkTest.hpp"
 
 #include <nupic/engine/Network.hpp>
@@ -48,47 +52,47 @@ void NetworkTest::test_nupic_auto_initialization()
 {
 
   // Uninitialize NuPIC since this test checks auto-initialization
-  // If shutdown fails, there is probably a problem with another test which 
-  // is not cleaning up its networks. 
+  // If shutdown fails, there is probably a problem with another test which
+  // is not cleaning up its networks.
   if (NuPIC::isInitialized())
     NuPIC::shutdown();
 
   TEST(!NuPIC::isInitialized());
-    
+
   // creating a network should auto-initialize NuPIC
   {
     Network net;
     TEST(NuPIC::isInitialized());
     Region *l1 = net.addRegion("level1", "TestNode", "");
-    
+
     // Use l1 to avoid a compiler warning
     EXPECT_STREQ("level1", l1->getName().c_str());
-    
-    // Network still exists, so this should fail. 
+
+    // Network still exists, so this should fail.
     SHOULDFAIL(NuPIC::shutdown());
   }
   // net destructor has been called so we should be able to shut down NuPIC now
   NuPIC::shutdown();
 }
-  
+
 void NetworkTest::test_region_access()
 {
   Network net;
   SHOULDFAIL( net.addRegion("level1", "nonexistent_nodetype", "") );
-  
-  // Should be able to add a region 
+
+  // Should be able to add a region
   Region *l1 = net.addRegion("level1", "TestNode", "");
 
   TEST(l1->getNetwork() == &net);
-  
+
   SHOULDFAIL(net.getRegions().getByName("nosuchregion"));
-  
+
   // Make sure partial matches don't work
   SHOULDFAIL(net.getRegions().getByName("level"));
-  
+
   Region* l1a = net.getRegions().getByName("level1");
   TEST(l1a == l1);
-  
+
   // Should not be able to add a second region with the same name
   SHOULDFAIL(net.addRegion("level1", "TestNode", ""));
 
@@ -105,30 +109,43 @@ void NetworkTest::test_network_initialization()
   {
     Network net;
     Region *l1 = net.addRegion("level1", "TestNode", "");
-    
+
     // Region does not yet have dimensions -- prevents network initialization
     SHOULDFAIL(net.initialize());
     SHOULDFAIL(net.run(1));
-    
+
     Dimensions d;
     d.push_back(4);
     d.push_back(4);
-    
+
     l1->setDimensions(d);
-    
+
     // Should succeed since dimensions are now set
     net.initialize();
     net.run(1);
 
+    Network n2;
+    {
+      std::stringstream ss;
+      net.write(ss);
+      ss.seekg(0);
+      n2.read(ss);
+      //n2.initialize();
+
+      net.save("tmp1.nta");
+      n2.save("tmp2.nta");
+    }
+
+
     Region *l2 = net.addRegion("level2", "TestNode", "");
     SHOULDFAIL(net.initialize());
     SHOULDFAIL(net.run(1));
-    
+
     l2->setDimensions(d);
     net.run(1);
 
   }
-  
+
 }
 
 void NetworkTest::test_network_modification()
@@ -157,7 +174,7 @@ void NetworkTest::test_network_modification()
 
 
     net.link("level1", "level2", "TestFanIn2", "");
-    
+
     const Collection<Region*>& regions = net.getRegions();
 
     TESTEQUAL((UInt32)2, regions.getCount());
@@ -170,14 +187,14 @@ void NetworkTest::test_network_modification()
     TESTEQUAL((UInt32)2, d2.size());
     TESTEQUAL((UInt32)2, d2[0]);
     TESTEQUAL((UInt32)2, d2[1]);
-    
+
     SHOULDFAIL(net.removeRegion("doesntexist"));
 
     net.removeRegion("level2");
     // net now only contains level1
     TESTEQUAL((UInt32)1, regions.getCount());
     SHOULDFAIL(regions.getByName("level2"));
-    
+
     // network requires initialization, but this will auto-initialize
     net.run(1);
 
@@ -194,7 +211,7 @@ void NetworkTest::test_network_modification()
     SHOULDFAIL(net.run(1));
 
     net.link("level1", "level2", "TestFanIn2", "");
-    
+
     // network can be initialized now
     net.run(1);
 
@@ -205,7 +222,7 @@ void NetworkTest::test_network_modification()
     TESTEQUAL((UInt32)2, d2.size());
     TESTEQUAL((UInt32)2, d2[0]);
     TESTEQUAL((UInt32)2, d2[1]);
-               
+
     // add a third region
     Region* l3 = net.addRegion("level3", "TestNode", "");
 
@@ -226,7 +243,7 @@ void NetworkTest::test_network_modification()
     TESTEQUAL((UInt32)2, d2.size());
     TESTEQUAL((UInt32)1, d2[0]);
     TESTEQUAL((UInt32)1, d2[1]);
-    
+
     // try to remove a region whose outputs are connected
     // this should fail because it would leave the network
     // unrunnable
@@ -242,11 +259,11 @@ void NetworkTest::test_network_modification()
     net.removeRegion("level2");
     net.removeRegion("level1");
     TESTEQUAL((UInt32)0, regions.getCount());
-    
-    // build up the network again -- slightly differently with 
+
+    // build up the network again -- slightly differently with
     // l1->l2 and l1->l3
     l1 = net.addRegion("level1", "TestNode", "");
-    l1->setDimensions(d); 
+    l1->setDimensions(d);
     net.addRegion("level2", "TestNode", "");
     net.addRegion("level3", "TestNode", "");
     net.link("level1", "level2", "TestFanIn2", "");
@@ -273,13 +290,13 @@ void NetworkTest::test_network_modification()
     TESTEQUAL((UInt32)2, d2.size());
     TESTEQUAL((UInt32)2, d2[0]);
     TESTEQUAL((UInt32)2, d2[1]);
-    
+
     // now let the destructor remove everything
-    
+
   }
 
 
-  { 
+  {
     // unlinking tests
     NTA_DEBUG << "Running unlinking tests";
     Network net;
@@ -312,7 +329,7 @@ void NetworkTest::test_network_modification()
     net.link("level1", "level2", "TestFanIn2", "");
     net.removeLink("level1", "level2", "bottomUpOut");
     SHOULDFAIL(net.removeLink("level1", "level2", "bottomUpOut"));
-    
+
     // add the link back and initialize (inducing dimensions)
     net.link("level1", "level2", "TestFanIn2", "");
     net.initialize();
@@ -321,12 +338,12 @@ void NetworkTest::test_network_modification()
     TESTEQUAL((UInt32)2, d.size());
     TESTEQUAL((UInt32)2, d[0]);
     TESTEQUAL((UInt32)1, d[1]);
-    
-    // remove the link. This will fail because we can't 
+
+    // remove the link. This will fail because we can't
     // remove a link to an initialized region
-    SHOULDFAIL_WITH_MESSAGE(net.removeLink("level1", "level2"), 
+    SHOULDFAIL_WITH_MESSAGE(net.removeLink("level1", "level2"),
                             "Cannot remove link [level1.bottomUpOut (region dims: [4 2])  to level2.bottomUpIn (region dims: [2 1])  type: TestFanIn2] because destination region level2 is initialized. Remove the region first.");
-    
+
   }
 
 }
@@ -357,7 +374,7 @@ void NetworkTest::test_phases()
 {
   {
     Network net;
-  
+
     // should auto-initialize with max phase
     Region *l1 = net.addRegion("level1", "TestNode", "");
     // Use l1 to avoid a compiler warning
@@ -375,7 +392,7 @@ void NetworkTest::test_phases()
     TEST(phaseSet.find(1) != phaseSet.end());
 
     SHOULDFAIL(net.initialize());
-  
+
     Dimensions d;
     d.push_back(2);
     d.push_back(2);
@@ -421,7 +438,7 @@ void NetworkTest::test_phases()
 
     TESTEQUAL((UInt32)0, minPhase);
     TESTEQUAL((UInt32)0, maxPhase);
-    
+
     SHOULDFAIL(n.setMinEnabledPhase(1));
     SHOULDFAIL(n.setMaxEnabledPhase(1));
     Region *l1 = n.addRegion("level1", "TestNode", "");
@@ -454,8 +471,8 @@ void NetworkTest::test_phases()
     EXPECT_STREQ("level1", computeHistory.at(3).c_str());
     EXPECT_STREQ("level2", computeHistory.at(4).c_str());
     EXPECT_STREQ("level3", computeHistory.at(5).c_str());
-    
-    
+
+
     n.setMinEnabledPhase(0);
     n.setMaxEnabledPhase(1);
     computeHistory.clear();
@@ -498,14 +515,14 @@ void NetworkTest::test_phases()
 
     // max > network max
     SHOULDFAIL(n.setMaxEnabledPhase(4));
-    
+
     std::set<UInt32> phases;
     phases.insert(4);
     phases.insert(6);
     n.setPhases("level2", phases);
     n.removeRegion("level1");
     // we now have: level2: 4, 6  level3: 2
-    
+
     minPhase = n.getMinPhase();
     maxPhase = n.getMaxPhase();
 
@@ -522,8 +539,8 @@ void NetworkTest::test_phases()
     EXPECT_STREQ("level3", computeHistory.at(3).c_str());
     EXPECT_STREQ("level2", computeHistory.at(4).c_str());
     EXPECT_STREQ("level2", computeHistory.at(5).c_str());
-    
-    
+
+
   }
 
   {
@@ -552,14 +569,5 @@ void NetworkTest::test_phases()
     EXPECT_STREQ("level2", mydata[4].c_str());
     EXPECT_STREQ("level3", mydata[5].c_str());
 
-  }    
+  }
 }
-
-
-
-
-
-
-
-
-  

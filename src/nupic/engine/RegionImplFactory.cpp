@@ -22,6 +22,9 @@
 
 
 #include <stdexcept>
+
+#include <capnp/any.h>
+
 #include <nupic/engine/RegionImplFactory.hpp>
 #include <nupic/engine/RegionImpl.hpp>
 #include <nupic/engine/Region.hpp>
@@ -81,8 +84,8 @@ namespace nupic
       rootDir_ = OS::executeCommand(command);
       if (!Path::exists(rootDir_))
         NTA_THROW << "Unable to find NuPIC library in '" << rootDir_ << "'";
-      
-      
+
+
 #if defined(NTA_OS_WINDOWS)
       const char * filename = "cpp_region.dll";
 #else
@@ -95,20 +98,20 @@ namespace nupic
         NTA_THROW << "Unable to find library '" << libName << "'";
 
       std::string errorString;
-      DynamicLibrary * p = 
-        DynamicLibrary::load(libName, 
+      DynamicLibrary * p =
+        DynamicLibrary::load(libName,
                              // export as LOCAL because we don't want
-                             // the symbols to be globally visible; 
+                             // the symbols to be globally visible;
                              // But the python module that we load
                              // has to be able to access symbols from
                              // libpython.so; Since libpython.so is linked
                              // to the pynode shared library, it appears
                              // we have to make the pynode shared library
                              // symbols global. TODO: investigate
-                             DynamicLibrary::GLOBAL| 
-                             // Evaluate them NOW instead of LAZY to catch 
+                             DynamicLibrary::GLOBAL|
+                             // Evaluate them NOW instead of LAZY to catch
                              // errors up front, even though this takes
-                             // a little longer to load the library. 
+                             // a little longer to load the library.
                              // However -- the current dependency chain
                              // PyNode->Region->RegionImplFactory apparently
                              // creates never-used dependencies on YAML
@@ -145,7 +148,7 @@ namespace nupic
       //NTA_DEBUG << "In DynamicPythonLibrary Destructor";
       if (finalizePython_)
         finalizePython_();
-    } 
+    }
 
     void * createSpec(std::string nodeType, void ** exception)
     {
@@ -159,7 +162,7 @@ namespace nupic
       return (*destroySpec_)(nodeType.c_str());
     }
 
-    void * createPyNode(const std::string& nodeType, 
+    void * createPyNode(const std::string& nodeType,
                         ValueMap * nodeParams,
                         Region * region,
                         void ** exception)
@@ -172,15 +175,15 @@ namespace nupic
 
     }
 
-    void * deserializePyNode(const std::string& nodeType, 
+    void * deserializePyNode(const std::string& nodeType,
                              BundleIO* bundle,
-                             Region * region, 
+                             Region * region,
                              void ** exception)
     {
       //NTA_DEBUG << "RegionImplFactory::deserializePyNode(" << nodeType << ")";
-      return (*deserializePyNode_)(nodeType.c_str(), 
+      return (*deserializePyNode_)(nodeType.c_str(),
                                    reinterpret_cast<void*>(bundle),
-                                   reinterpret_cast<void*>(region), 
+                                   reinterpret_cast<void*>(region),
                                    exception);
     }
 
@@ -215,7 +218,7 @@ static RegionImpl * createPyNode(DynamicPythonLibrary * pyLib,
 {
   for (auto package : packages)
   {
-    
+
     // Construct the full module path to the requested node
     std::string fullNodeType = std::string(package);
     if (!fullNodeType.empty()) // Not in current directory
@@ -232,8 +235,8 @@ static RegionImpl * createPyNode(DynamicPythonLibrary * pyLib,
   return nullptr;
 }
 
-// This function deserializes either a NuPIC 2 or NuPIC 1 Python node 
-static RegionImpl * deserializePyNode(DynamicPythonLibrary * pyLib, 
+// This function deserializes either a NuPIC 2 or NuPIC 1 Python node
+static RegionImpl * deserializePyNode(DynamicPythonLibrary * pyLib,
                                       const std::string & nodeType,
                                       BundleIO & bundle,
                                       Region * region)
@@ -241,7 +244,7 @@ static RegionImpl * deserializePyNode(DynamicPythonLibrary * pyLib,
   // We need to find the module so that we know if it is NuPIC 1 or NuPIC 2
   for (auto package : packages)
   {
-    
+
     // Construct the full module path to the requested node
     std::string fullNodeType = std::string(package);
     if (!fullNodeType.empty()) // Not in current directory
@@ -260,43 +263,46 @@ static RegionImpl * deserializePyNode(DynamicPythonLibrary * pyLib,
 
 }
 
-RegionImpl* RegionImplFactory::createRegionImpl(const std::string nodeType, 
+RegionImpl* RegionImplFactory::createRegionImpl(const std::string nodeType,
                                                 const std::string nodeParams,
                                                 Region* region)
 {
 
-  RegionImpl *mn = nullptr;
+  RegionImpl *impl = nullptr;
+  // Specs are stored in cache and cleaned up when NuPIC shuts down so do not
+  // free this pointer.
   Spec *ns = getSpec(nodeType);
   ValueMap vm = YAMLUtils::toValueMap(
-    nodeParams.c_str(), 
-    ns->parameters, 
-    nodeType, 
+    nodeParams.c_str(),
+    ns->parameters,
+    nodeType,
     region->getName());
-    
+
   if (nodeType == "TestNode")
   {
-    mn = new TestNode(vm, region);
+    impl = new TestNode(vm, region);
   } else if (nodeType == "VectorFileEffector")
   {
-    mn = new VectorFileEffector(vm, region);
+    impl = new VectorFileEffector(vm, region);
   } else if (nodeType == "VectorFileSensor")
   {
-    mn = new VectorFileSensor(vm, region);
+    impl = new VectorFileSensor(vm, region);
   } else if ((nodeType.find(std::string("py.")) == 0))
   {
     if (!pyLib_)
       pyLib_ = boost::shared_ptr<DynamicPythonLibrary>(new DynamicPythonLibrary());
-    
-    mn = createPyNode(pyLib_.get(), nodeType, &vm, region);
+
+    impl = createPyNode(pyLib_.get(), nodeType, &vm, region);
   } else
   {
     NTA_THROW << "Unsupported node type '" << nodeType << "'";
   }
-  return mn;
+
+  return impl;
 
 }
 
-RegionImpl* RegionImplFactory::deserializeRegionImpl(const std::string nodeType, 
+RegionImpl* RegionImplFactory::deserializeRegionImpl(const std::string nodeType,
                                                      BundleIO& bundle,
                                                      Region* region)
 {
@@ -316,7 +322,7 @@ RegionImpl* RegionImplFactory::deserializeRegionImpl(const std::string nodeType,
   {
     if (!pyLib_)
       pyLib_ = boost::shared_ptr<DynamicPythonLibrary>(new DynamicPythonLibrary());
-    
+
     mn = deserializePyNode(pyLib_.get(), nodeType, bundle, region);
   } else
   {
@@ -326,13 +332,43 @@ RegionImpl* RegionImplFactory::deserializeRegionImpl(const std::string nodeType,
 
 }
 
-// This function returns the node spec of a NuPIC 2 or NuPIC 1 Python node 
+RegionImpl* RegionImplFactory::deserializeRegionImpl(
+    const std::string nodeType,
+    capnp::AnyPointer::Reader& proto,
+    Region* region)
+{
+  RegionImpl *mn = nullptr;
+
+  if (nodeType == "TestNode")
+  {
+    mn = new TestNode(proto, region);
+  //} else if (nodeType == "VectorFileEffector")
+  //{
+  //  mn = new VectorFileEffector(proto, region);
+  //} else if (nodeType == "VectorFileSensor")
+  //{
+  //  mn = new VectorFileSensor(proto, region);
+  //} else if (StringUtils::startsWith(nodeType, "py."))
+  //{
+  //  if (!pyLib_)
+  //    pyLib_ = boost::shared_ptr<DynamicPythonLibrary>(new DynamicPythonLibrary());
+
+  //  mn = deserializePyNode(pyLib_.get(), nodeType, proto, region);
+  } else
+  {
+    NTA_THROW << "Unsupported node type '" << nodeType << "'";
+  }
+  return mn;
+
+}
+
+// This function returns the node spec of a NuPIC 2 or NuPIC 1 Python node
 static Spec * getPySpec(DynamicPythonLibrary * pyLib,
                                 const std::string & nodeType)
 {
   for (auto package : packages)
   {
-    
+
 
     // Construct the full module path to the requested node
     std::string fullNodeType = std::string(package);
@@ -364,7 +400,7 @@ Spec * RegionImplFactory::getSpec(const std::string nodeType)
   if (nodeType == "TestNode")
   {
     ns = TestNode::createSpec();
-  } 
+  }
   else if (nodeType == "VectorFileEffector")
   {
     ns = VectorFileEffector::createSpec();
@@ -379,8 +415,8 @@ Spec * RegionImplFactory::getSpec(const std::string nodeType)
       pyLib_ = boost::shared_ptr<DynamicPythonLibrary>(new DynamicPythonLibrary());
 
     ns = getPySpec(pyLib_.get(), nodeType);
-  } 
-  else 
+  }
+  else
   {
     NTA_THROW << "getSpec() -- Unsupported node type '" << nodeType << "'";
   }
@@ -391,7 +427,7 @@ Spec * RegionImplFactory::getSpec(const std::string nodeType)
   nodespecCache_[nodeType] = ns;
   return ns;
 }
-    
+
 void RegionImplFactory::cleanup()
 {
   std::map<std::string, Spec*>::iterator ns;
