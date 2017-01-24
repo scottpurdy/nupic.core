@@ -8,7 +8,7 @@ machine:
     XCODE_WORKSPACE: nupic
     ARCHFLAGS: "-arch x86_64"
   pre:
-    - pip install --ignore-installed --upgrade --verbose pip
+    - pip install --user --ignore-installed --upgrade --verbose pip
     - pip install --user --ignore-installed --upgrade --verbose virtualenv
     - ln -s ~/Library/Python/2.7/bin/virtualenv /usr/local/bin/virtualenv
 
