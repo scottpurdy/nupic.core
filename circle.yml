@@ -20,6 +20,8 @@ dependencies:
   pre:
     - echo "$PATH"
     - echo "$PYTHONPATH"
+    - ls -la $HOME/Library/Python/2.7/lib/python/site-packages/
+    - echo $PIP
     - $PIP --version
     - $PIP install --user wheel
     - $PIP install --user numpy==1.11.2 pycapnp==0.5.8
