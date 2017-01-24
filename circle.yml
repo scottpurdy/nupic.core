@@ -18,6 +18,7 @@ dependencies:
   pre:
     - echo "$PATH"
     - echo "$PYTHONPATH"
+    - pip install --user --ignore-installed --upgrade --verbose pip
     - pip install --user wheel
     - pip install --user numpy==1.11.2 pycapnp==0.5.8
   override:
