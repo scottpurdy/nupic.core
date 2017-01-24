@@ -9,19 +9,20 @@ machine:
     ARCHFLAGS: "-arch x86_64"
     PATH: "$HOME/Library/Python/2.7/bin:$PATH"
     PYTHONPATH: "$HOME/Library/Python/2.7/lib/python/site-packages:$PYTHONPATH"
+    PIP: "$HOME/Library/Python/2.7/bin/pip"
   pre:
-    - pip install --user --ignore-installed --upgrade --verbose pip
     - pip install --user --ignore-installed --upgrade --verbose virtualenv
     - ln -s ~/Library/Python/2.7/bin/virtualenv /usr/local/bin/virtualenv
+  post:
+    - pip install --user --ignore-installed --upgrade --verbose pip
 
 dependencies:
   pre:
     - echo "$PATH"
     - echo "$PYTHONPATH"
-    - pip install --user --ignore-installed --upgrade --verbose pip
-    - which pip
-    - pip install --user wheel
-    - pip install --user numpy==1.11.2 pycapnp==0.5.8
+    - $PIP --version
+    - $PIP install --user wheel
+    - $PIP install --user numpy==1.11.2 pycapnp==0.5.8
   override:
     - mkdir -p build/scripts
     - cd build/scripts && cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../release -DPY_EXTENSIONS_DIR=../../bindings/py/nupic/bindings
