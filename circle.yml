@@ -19,6 +19,8 @@ dependencies:
     - pwd
     - ls -la
     - ls -la ..
+    - ls -la ../bin
+    - ls -la ../virtualenvs
     - which pip
     - pip install --ignore-installed -U pip
     - which pip
