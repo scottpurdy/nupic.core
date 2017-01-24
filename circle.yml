@@ -14,6 +14,7 @@ machine:
 dependencies:
   pre:
     #- brew install cmake
+    - pip install --user wheel
     - pip install --user numpy==1.11.2 pycapnp==0.5.8
   override:
     - mkdir -p build/scripts
