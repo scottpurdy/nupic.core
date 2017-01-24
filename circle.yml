@@ -8,30 +8,30 @@ machine:
     XCODE_WORKSPACE: nupic
     ARCHFLAGS: "-arch x86_64"
     PATH: "$HOME/Library/Python/2.7/bin:$PATH"
-    PYTHONPATH: "$HOME/Library/Python/2.7/lib/python/site-packages:$PYTHONPATH"
-    PIP: "$HOME/Library/Python/2.7/bin/pip"
+    PYTHONPATH: "$HOME/Library/Python/2.7/lib/python/site-packages"
+    PYBIN: "$HOME/Library/Python/2.7/bin"
   pre:
     - pip install --user --ignore-installed --upgrade --verbose virtualenv
     - ln -s ~/Library/Python/2.7/bin/virtualenv /usr/local/bin/virtualenv
-  post:
-    - pip install --user --ignore-installed --upgrade --verbose pip
 
 dependencies:
-  pre:
+  override:
+    - PATH=$PYBIN:$PATH pip install --user --ignore-installed --upgrade --verbose pip
     - echo "$PATH"
     - echo "$PYTHONPATH"
+    - echo "$PYBIN"
     - ls -la $HOME/Library/Python/2.7/lib/python/site-packages/
-    - echo $PIP
-    - $PIP --version
-    - $PIP install --user wheel
-    - $PIP install --user numpy==1.11.2 pycapnp==0.5.8
-    - $PIP install --user pytest
+    - pip --version
+    - PATH=$PYBIN:$PATH pip --version
+    - PATH=$PYBIN:$PATH pip install --user wheel
+    - PATH=$PYBIN:$PATH pip install --user numpy==1.11.2 pycapnp==0.5.8
+    - PATH=$PYBIN:$PATH pip install --user pytest
+
+#database:
+compile:
   override:
     - mkdir -p build/scripts
     - cd build/scripts && cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../release -DPY_EXTENSIONS_DIR=../../bindings/py/nupic/bindings
-
-#database:
-#compile:
 test:
   override:
     - py.test tests/unit
