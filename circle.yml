@@ -23,7 +23,6 @@ dependencies:
     - ls -la ../virtualenvs
     - ls -la ../virtualenvs/venv-system
     - echo $VIRTUAL_ENV
-    - which deactivate
     - which pip
     - pip install --ignore-installed -U pip
     - which pip
