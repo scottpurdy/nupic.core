@@ -6,8 +6,6 @@ machine:
   environment:
     XCODE_SCHEME: nupic
     XCODE_WORKSPACE: nupic
-  override:
-    - echo "no virtualenv"
 
 #dependencies:
 #database:
