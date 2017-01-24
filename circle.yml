@@ -1,0 +1,9 @@
+machine:
+  timezone:
+    America/Los_Angeles
+  xcode:
+    version: 8.0
+  python:
+    version: 2.7.5
+  services:
+    - mysql
