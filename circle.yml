@@ -17,11 +17,8 @@ machine:
 dependencies:
   override:
     - pwd
-    - ls -la
-    - ls -la ..
-    - ls -la ../bin
-    - ls -la ../virtualenvs
-    - ls -la ../virtualenvs/venv-system
+    - ls -la $VIRTUAL_ENV/lib
+    - ls -la $VIRTUAL_ENV/lib/python
     - echo $VIRTUAL_ENV
     - which pip
     - pip install --ignore-installed -U pip
