@@ -6,11 +6,20 @@ machine:
   environment:
     XCODE_SCHEME: nupic
     XCODE_WORKSPACE: nupic
+    ARCHFLAGS: "-arch x86_64"
   pre:
     - pip install --user --ignore-installed --upgrade --verbose virtualenv
     - ln -s ~/Library/Python/2.7/bin/virtualenv /usr/local/bin/virtualenv
 
-#dependencies:
+dependencies:
+  pre:
+    - brew install cmake
+    - pip install --user numpy==1.11.2 pycapnp==0.5.8
+  override:
+    - mkdir -p build/scripts
+    - cd build/scripts
+    - cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../release -DPY_EXTENSIONS_DIR=../../bindings/py/nupic/bindings
+
 #database:
 #compile:
 #test:
