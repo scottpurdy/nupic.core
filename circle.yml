@@ -25,6 +25,7 @@ dependencies:
     - $PIP --version
     - $PIP install --user wheel
     - $PIP install --user numpy==1.11.2 pycapnp==0.5.8
+    - $PIP install --user pytest
   override:
     - mkdir -p build/scripts
     - cd build/scripts && cmake ../.. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../release -DPY_EXTENSIONS_DIR=../../bindings/py/nupic/bindings
