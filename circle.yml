@@ -16,8 +16,10 @@ machine:
 
 dependencies:
   pre:
-    - tail ~/.circlerc
-    - sed -i '$ d' ~/.circlerc
+    - cat ~/.bash_profile
+    - cat ~/.bashrc
+    - cat ~/.circlerc
+    - sed -i '' -e '$ d' ~/.circlerc
   override:
     - pwd
     - ls -la $VIRTUAL_ENV/lib
