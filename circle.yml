@@ -10,15 +10,14 @@ machine:
     PATH: "$HOME/Library/Python/2.7/bin:$PATH"
     PYTHONPATH: "$HOME/Library/Python/2.7/lib/python/site-packages"
     PYBIN: "$HOME/Library/Python/2.7/bin"
-  #pre:
-  #pr- pip install --user --ignore-installed --upgrade --verbose virtualenv
-  #pr- ln -s ~/Library/Python/2.7/bin/virtualenv /usr/local/bin/virtualenv
-
-checkout:
-  post:
-    - rm -rf ~/.pyenv
+  pre:
+    - pip install --user --ignore-installed --upgrade --verbose virtualenv
+    - ln -s ~/Library/Python/2.7/bin/virtualenv /usr/local/bin/virtualenv
 
 dependencies:
+  pre:
+    - tail ~/.circlerc
+    - sed -i '$ d' ~/.circlerc
   override:
     - pwd
     - ls -la $VIRTUAL_ENV/lib
