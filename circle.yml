@@ -7,7 +7,6 @@ machine:
     XCODE_SCHEME: nupic
     XCODE_WORKSPACE: nupic
     ARCHFLAGS: "-arch x86_64"
-    PATH: "$HOME/Library/Python/2.7/bin:$PATH"
     PYTHONPATH: "$HOME/Library/Python/2.7/lib/python/site-packages"
     PYBIN: "$HOME/Library/Python/2.7/bin"
   pre:
@@ -20,16 +19,13 @@ dependencies:
     - cat ~/.bashrc
     - cat ~/.circlerc
     - sed -i '' -e '$ d' ~/.circlerc
+    - echo 'export PATH=$HOME/Library/Python/2.7/bin:$PATH' >> ~/.bash_profile
+    - echo 'export PATH=$HOME/Library/Python/2.7/bin:$PATH' >> ~/.bashrc
   override:
-    - pwd
-    - ls -la $VIRTUAL_ENV/lib
-    - ls -la $VIRTUAL_ENV/lib/python
-    - echo $VIRTUAL_ENV
-    - which pip
-    - pip install -U pip
     - which pip
     - curl --silent --show-error --retry 5 -O http://releases.numenta.org/pip/1ebd3cb7a5a3073058d0c9552ab074bd/get-pip.py
     - python get-pip.py --user pip setuptools wheel
+    - which pip
     - echo "$PATH"
     - echo "$PYTHONPATH"
     - echo "$PYBIN"
