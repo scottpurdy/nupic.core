@@ -207,9 +207,8 @@ extern "C"
     }
     catch (nupic::Exception & e)
     {
-      NTA_WARN << "PyRegion::createSpec failed: " << exception;
+      NTA_WARN << "PyRegion::createSpec failed: " << e.getMessage();
 
-      *exception = new nupic::Exception(e);
       return NULL;
     }
     catch (...)
@@ -1003,10 +1002,13 @@ void PyRegion::createSpec(const char * nodeType, Spec & ns, const char* classNam
 {
   // Get the Python class object
   std::string realClassName(className);
+  std::cout << "realClassName: " << realClassName << std::endl;
+  std::cout << "nodeType: " << nodeType << std::endl;
   if (realClassName.empty())
   {
     realClassName = Path::getExtension(nodeType);
   }
+  std::cout << "realClassName: " << realClassName << std::endl;
 
   py::Class nodeClass(nodeType, realClassName);
 
