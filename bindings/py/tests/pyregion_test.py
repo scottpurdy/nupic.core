@@ -19,8 +19,11 @@
 # http://numenta.org/licenses/
 # ----------------------------------------------------------------------
 
+import os
+import sys
 import unittest
 
+from nupic.bindings.engine_internal import Network
 from nupic.bindings.regions.PyRegion import PyRegion
 
 
@@ -47,6 +50,59 @@ class Z(object):
   def __init__(self):
     y = Y()
     y.setParameter('zzz', 0, 4)
+
+
+
+class CounterSource(PyRegion):
+  def __init__(self):
+    self._count = 0
+  @classmethod
+  def getSpec(cls):
+    return {
+      "description": (
+        "Source region that outputs the number of times it has run, "
+        "inclusive."),
+      "outputs": {
+        "count": {
+          "description": "The number of times the region has run.",
+          "dataType": "uint32",
+          "count": 1,
+          "regionLevel": True,
+          "isDefaultOutput": True,
+        },
+      },
+    }
+  def initialize(self, inputs, outputs): pass
+  def compute(self, inputs, outputs):
+    self._count += 1
+    outputs["count"][0] = self._count
+
+
+
+class TestSink(PyRegion):
+  def __init__(self):
+    self._lastInput = None
+  @classmethod
+  def getSpec(cls):
+    return {
+      "description": (
+        "Source region that outputs the number of times it has run, "
+        "inclusive."),
+      "inputs": {
+        "inputValue": {
+          "description": "The value from the input link.",
+          "dataType": "uint32",
+          "count": 1,
+          "regionLevel": True,
+          "isDefaultInput": True,
+        },
+      },
+    }
+  def initialize(self, inputs, outputs): pass
+  def compute(self, inputs, outputs):
+    self._lastInput = self.inputs["inputValue"][0]
+  def getLastInput(self):
+    return self._lastInput
 
 
 
@@ -107,6 +163,27 @@ class PyRegionTest(unittest.TestCase):
 
     self.assertEqual(str(cw.exception),
                      "The method setParameter is not implemented.")
+
+
+  def testDelayedLinks(self):
+    moduleDir, moduleName = os.path.split(__file__)
+    moduleDir = os.path.abspath(os.path.join(os.getcwd(), moduleDir))
+    moduleName = moduleName.split(".")[0]
+    print "sys.path start: ", sys.path
+    sys.path.append(moduleDir)
+    print "sys.path before: ", sys.path
+    print "registering: ", moduleName, CounterSource.__name__
+    Network.registerPyRegion(moduleName, CounterSource.__name__)
+    Network.registerPyRegion(moduleName, TestSink.__name__)
+
+    net = Network()
+    net.addRegion("source", "py.CounterSource", "")
+    net.addRegion("sink", "py.TestSink", "")
+    net.link("source", "sink", "UniformLink", "")
+    network.initialize()
+
+    del sys.path[-1]
+    print "sys.path after: ", sys.path
 
 
 

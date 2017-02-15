@@ -252,7 +252,9 @@ TEST(InputTest, DelayedLink)
     Real64* idata = (Real64*)(ai2->getBuffer());
     //only test 4 instead of 64 to cut down on number of tests
     for (UInt i = 0; i < 4; i++)
+    {
       ASSERT_EQ(0, idata[i]);
+    }
   }
 
 
@@ -261,7 +263,9 @@ TEST(InputTest, DelayedLink)
     const ArrayBase * ao1 = &(out1->getData());
     Real64* idata = (Real64*)(ao1->getBuffer());
     for (UInt i = 0; i < 64; i++)
+    {
       idata[i] = 100;
+    }
   }
 
 
