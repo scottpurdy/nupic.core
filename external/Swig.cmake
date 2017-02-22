@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------
 # Numenta Platform for Intelligent Computing (NuPIC)
-# Copyright (C) 2015, Numenta, Inc.  Unless you have purchased from
+# Copyright (C) 2015-2017, Numenta, Inc.  Unless you have purchased from
 # Numenta, Inc. a separate commercial license for this software code, the
 # following terms and conditions apply:
 #
@@ -27,27 +27,24 @@
 #   SWIG_DIR: the directory where swig is installed (.i files, etc.) as defined
 #             by FindSWIG.
 
-set(swig_path "${REPOSITORY_DIR}/external/common/src/swig-3.0.2.tar.gz")
+set(swig_tarfile "swig-3.0.2.tar.gz")
+set(swig_path "${REPOSITORY_DIR}/external/common/src/${swig_tarfile}")
+set(swig_dir "${CMAKE_BINARY_DIR}/swig/swig-3.0.2")
 set(pcre_path "${REPOSITORY_DIR}/external/common/src/pcre-8.37.tar.gz")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  # We bundle pre-built Swig for Windows (presumably because we can't build it?)
+  # We bundle pre-built Swig for Windows per official recommendation
   add_custom_target(Swig)
   set(swig_executable
       ${PROJECT_SOURCE_DIR}/${PLATFORM}${BITNESS}${PLATFORM_SUFFIX}/bin/swig.exe)
   set(swig_dir ${PROJECT_SOURCE_DIR}/common/share/swig/3.0.2)
-else()
+
+elseif(NOT EXISTS ${EP_BASE}/Install/bin/swig)
   # Build Swig from source on non-Windows (e.g., Linux and OS X)
-  ExternalProject_Add(
-    Swig
-    URL ${swig_path}
-    UPDATE_COMMAND ""
-    CONFIGURE_COMMAND
-      mkdir -p ${EP_BASE}/Source/Swig/Tools/ &&
-      cp ${pcre_path} ${EP_BASE}/Build/Swig/ &&
-      ${EP_BASE}/Source/Swig/Tools/pcre-build.sh &&
-      ${EP_BASE}/Source/Swig/configure --prefix=${EP_BASE}/Install --enable-cpp11-testing
+  execute_process(
+    COMMAND /bin/bash -c "BUILD_DIR=${CMAKE_BINARY_DIR}/swig SWIG_PATH=${swig_path} PCRE_PATH=${pcre_path} PREFIX=${EP_BASE}/Install ${REPOSITORY_DIR}/external/build_swig.sh"
   )
+
   set(swig_executable ${EP_BASE}/Install/bin/swig)
   set(swig_dir ${EP_BASE}/Install/share/swig/3.0.2)
 endif()

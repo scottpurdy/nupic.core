@@ -749,6 +749,7 @@ if (NUPIC_BUILD_PYEXT_MODULES)
     )
   endfunction(PREPEND_BOILERPLATE_TO_PYTHON_PROXY_MODULE)
 
+  include(src/SwigGetDependencies)
 
   function(BUILD_EXTENSION MODULE_NAME)
     # Create a nupic.bindings swig extension target with the given Swig module
@@ -762,6 +763,13 @@ if (NUPIC_BUILD_PYEXT_MODULES)
     set_source_files_properties(${source_interface_file} PROPERTIES
                                 CPLUSPLUS ON
                                 SWIG_MODULE_NAME ${MODULE_NAME})
+
+    # From src/SwigGetDependencies.cmake
+    swig_get_wrapper_dependencies(
+      ${PROJECT_SOURCE_DIR}/${source_interface_file}
+      ${MODULE_NAME}_fakefile
+      python
+      SWIG_MODULE_${MODULE_NAME}_EXTRA_DEPS)
 
     #
     # Create custom command for generating files from SWIG
